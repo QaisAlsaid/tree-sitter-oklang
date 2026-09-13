@@ -16,4 +16,3 @@ nix develop
 tree-sitter generate && tree-sitter test
 tree-sitter highlight examples/factorial.ok
 ```
-
