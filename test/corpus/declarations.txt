@@ -1,0 +1,141 @@
+==================
+let: minimal
+==================
+
+let a;
+
+---
+
+(source_file
+  (let_decl
+    (binding
+      name: (ident))))
+
+==================
+let: mods, mut, init
+==================
+
+export glob let mut count = 0;
+
+---
+
+(source_file
+  (let_decl
+    (binding
+      name: (ident))
+    (number_expr)))
+
+==================
+fu: empty body
+==================
+
+fu f() {}
+
+---
+
+(source_file
+  (fu_decl
+    name: (ident)
+    body: (compound_stmt)))
+
+==================
+fu: params, mut, trailing comma
+==================
+
+async export fu f(mut x, y,) { print x; }
+
+---
+
+(source_file
+  (fu_decl
+    (ident)
+    (bind_list
+      (binding
+        (ident))
+      (binding
+        (ident)))
+    (compound_stmt
+      (print_stmt
+        (ident)))))
+
+==================
+fu: single statement body
+==================
+
+fu hello() print "hi";
+
+---
+
+(source_file
+  (fu_decl
+    (ident)
+    (print_stmt
+      (string_expr
+        (double_quoted_string)))))
+
+==================
+class: all member kinds
+==================
+
+export class Point inherits Base {
+  let x;
+  static let mut count = 0;
+  pub fu get() { return this.x; }
+  operator + (_) { return this; }
+  operator string() { return this.x; }
+}
+
+---
+
+(source_file
+  (class_decl
+    (ident)
+    (ident)
+    (class_let_decl
+      (binding
+        (ident)))
+    (class_let_decl
+      (binding
+        (ident))
+      (number_expr))
+    (class_fu_decl
+      (ident)
+      (compound_stmt
+        (return_stmt
+          (access_expr
+            (this_expr)
+            (ident)))))
+    (class_operator_decl
+      (class_overridable_operator)
+      (bind_list
+        (binding
+          (ident)))
+      (compound_stmt
+        (return_stmt
+          (this_expr))))
+    (class_operator_decl
+      (class_conversion_operator
+        (ident))
+      (compound_stmt
+        (return_stmt
+          (access_expr
+            (this_expr)
+            (ident)))))))
+
+==================
+import
+==================
+
+glob import "std.str" as str;
+import 'util';
+
+---
+
+(source_file
+  (import_decl
+    (string_expr
+      (double_quoted_string))
+    (ident))
+  (import_decl
+    (string_expr
+      (single_quoted_string))))

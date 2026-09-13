@@ -1,0 +1,276 @@
+==================
+if: else
+==================
+
+if a ? print 1; else print 2;
+
+---
+
+(source_file
+  (if_stmt
+    (ident)
+    (print_stmt
+      (number_expr))
+    (print_stmt
+      (number_expr))))
+
+==================
+if: else with ?
+==================
+
+if a ? {} else ? {}
+
+---
+
+(source_file
+  (if_stmt
+    (ident)
+    (compound_stmt)
+    (compound_stmt)))
+
+==================
+if: else-if chain
+==================
+
+if a ? {} else if b ? {} else {};
+
+---
+
+(source_file
+  (if_stmt
+    (ident)
+    (compound_stmt)
+    (if_stmt
+      (ident)
+      (compound_stmt)
+      (compound_stmt)))
+  (empty_stmt))
+
+==================
+while
+==================
+
+while a ? {}
+
+---
+
+(source_file
+  (while_stmt
+    (ident)
+    (compound_stmt)))
+
+==================
+for: empty
+==================
+
+for ; ; ? {}
+
+---
+
+(source_file
+  (for_stmt
+    (compound_stmt)))
+
+==================
+for: let init
+==================
+
+for let i = 0; i < 10; i = i + 1? { print i; }
+
+---
+
+(source_file
+  (for_stmt
+    (let_decl
+      (binding
+        (ident))
+      (number_expr))
+    (binary_expr
+      (ident)
+      (number_expr))
+    (assignment_expr
+      (lvalue_expr
+        (ident))
+      (binary_expr
+        (ident)
+        (number_expr)))
+    (compound_stmt
+      (print_stmt
+        (ident)))))
+
+==================
+for: fu init
+==================
+
+for fu x(_) { print _; }; i < 10; i = i + 1? { x(i); }
+
+---
+
+(source_file
+  (for_stmt
+    (fu_decl
+      (ident)
+      (bind_list
+        (binding
+          (ident)))
+      (compound_stmt
+        (print_stmt
+          (ident))))
+    (binary_expr
+      (ident)
+      (number_expr))
+    (assignment_expr
+      (lvalue_expr
+        (ident))
+      (binary_expr
+        (ident)
+        (number_expr)))
+    (compound_stmt
+      (expr_stmt
+        (call_expr
+          (ident)
+          (expr_list
+            (ident)))))))
+
+==================
+try: binding + finalize
+==================
+
+try {} catch e { print e; } finalize {}
+
+---
+
+(source_file
+  (try_stmt
+    (compound_stmt)
+    (catch_binding
+      (ident))
+    (compound_stmt
+      (print_stmt
+        (ident)))
+    (compound_stmt)))
+
+==================
+try: no binding
+==================
+
+try {} catch {}
+
+---
+
+(source_file
+  (try_stmt
+    (compound_stmt)
+    (compound_stmt)))
+
+==================
+try: greedy catch binding
+==================
+
+try {} catch e;
+
+---
+
+(source_file
+  (try_stmt
+    (compound_stmt)
+    (catch_binding
+      (ident))
+    (empty_stmt)))
+
+==================
+return: empty / value
+==================
+
+return;
+return 1;
+
+---
+
+(source_file
+  (return_stmt)
+  (return_stmt
+    (number_expr)))
+
+==================
+break / continue
+==================
+
+break;
+continue;
+
+---
+
+(source_file
+  (break_stmt)
+  (continue_stmt))
+
+==================
+print / yield / throw
+==================
+
+print 1;
+yield 2;
+throw;
+throw 23;
+
+---
+
+(source_file
+  (print_stmt
+    (number_expr))
+  (yield_stmt
+    (number_expr))
+  (throw_stmt)
+  (throw_stmt
+    (number_expr)))
+
+==================
+empty compound vs empty statement
+==================
+
+{ };
+;;
+
+---
+
+(source_file
+  (compound_stmt)
+  (empty_stmt)
+  (empty_stmt)
+  (empty_stmt))
+
+==================
+decls inside compound
+==================
+
+fu f() { let x = 1; print x; }
+
+---
+
+(source_file
+  (fu_decl
+    (ident)
+    (compound_stmt
+      (let_decl
+        (binding
+          (ident))
+        (number_expr))
+      (print_stmt
+        (ident)))))
+
+==================
+comments as extras
+==================
+
+let /* hi */ x = 1; // trailing
+
+---
+
+(source_file
+  (let_decl
+    (multiline_comment)
+    (binding
+      (ident))
+    (number_expr))
+  (line_comment))

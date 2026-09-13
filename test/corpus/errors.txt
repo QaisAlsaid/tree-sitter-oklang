@@ -1,0 +1,65 @@
+==================
+errors: invalid 
+==================
+
+let = 1;
+let 1 = 1;
+fu f(u v) {}
+print;
+}
+
+---
+
+    (source_file
+      (let_decl
+        (binding
+          (MISSING ident))
+        (number_expr))
+      (ERROR
+        (number_expr))
+      (expr_stmt
+        (number_expr))
+      (fu_decl
+        (ident)
+        (bind_list
+          (binding
+            (ident)))
+        (ERROR
+          (ident))
+        (compound_stmt))
+      (ERROR))
+
+==================
+errors: strings unknown escape
+==================
+
+let bad = "oops\x";
+
+---
+
+    (source_file
+      (let_decl
+        (binding
+          (ident))
+        (string_expr
+          (double_quoted_string
+            (ERROR
+              (UNEXPECTED 'x')
+              (ident))))))
+
+==================
+errors: strings lone brace in f strings
+==================
+
+let bad = f"oops }";
+
+---
+
+    (source_file
+      (let_decl
+        (binding
+          (ident))
+        (string_expr
+          (interpolated_string
+            (f_double_quoted
+              (ERROR))))))

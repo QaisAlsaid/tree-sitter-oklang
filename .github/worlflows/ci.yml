@@ -1,0 +1,50 @@
+name: ci
+on:
+  push: { branches: [main], tags: ['v*'] }
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i -g tree-sitter-cli
+      - run: tree-sitter generate && git diff --exit-code src/
+      - run: tree-sitter test
+      - name: smoke test (dorg3)
+        run: |
+          test -f examples/game.ok
+          tree-sitter parse examples/game.ok > /dev/null   # exit 1 on ERROR/MISSING
+      - name: report status back to codeberg
+        if: always()
+        run: |
+          curl -s -X POST \
+            -H "Authorization: token ${{ secrets.CODEBERG_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"state":"${{ job.status == 'success' && 'success' || 'failure' }}",
+                 "target_url":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                 "context":"ci (github mirror)"}' \
+            https://codeberg.org/api/v1/repos/qais/tree-sitter-oklang/statuses/${{ github.sha }}
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: git archive --format=tar.gz -o tree-sitter-oklang-${{ github.ref_name }}.tar.gz ${{ github.ref_name }}
+      - run: gh release create ${{ github.ref_name }} tree-sitter-oklang-${{ github.ref_name }}.tar.gz
+        env: { GH_TOKEN: '${{ github.token }}' }
+      - name: mirror release to codeberg
+        run: |
+          id=$(curl -s -X POST \
+            -H "Authorization: token ${{ secrets.CODEBERG_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"tag_name":"${{ github.ref_name }}"}' \
+            https://codeberg.org/api/v1/repos/qais/tree-sitter-oklang/releases | jq -r .id)
+          curl -s -X POST \
+            -H "Authorization: token ${{ secrets.CODEBERG_TOKEN }}" \
+            "https://codeberg.org/api/v1/repos/qais/tree-sitter-oklang/releases/$id/assets?name=tree-sitter-oklang-${{ github.ref_name }}.tar.gz" \
+            -F attachment=@tree-sitter-oklang-${{ github.ref_name }}.tar.gz

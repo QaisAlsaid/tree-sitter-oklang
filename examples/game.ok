@@ -1,0 +1,1512 @@
+// decoration constants
+glob let g_c_font = load_font("game/assets/fonts/comici-sans.ttf");
+glob let g_c_roboto_font = load_font("game/assets/fonts/roboto-regular.ttf");
+glob let g_c_collision_color = create_color(0, 50, 255, 155);
+glob let g_c_death_color = create_color(179, 0, 255, 255);
+
+// screens constants 
+glob let g_c_screen_menu = 0;
+glob let g_c_screen_game = 1;
+glob let g_c_screen_settings = 2;
+glob let g_c_screen_credits = 3;
+
+// arena constants
+glob let g_c_arena_bound_x = 1280;
+glob let g_c_arena_bound_y = 720;
+
+// wave constants
+glob let g_c_wave_duration = 15;
+glob let g_c_wave_transition_duration = 1.5;
+
+// wave state constants
+glob let g_c_wave_state_appending = 0;
+glob let g_c_wave_state_started = 1;
+glob let g_c_wave_state_transition = 2;
+glob let g_c_wave_state_ballerina = 3;
+
+// music constants
+glob let g_c_music_menu = 0;
+glob let g_c_music_game = 1;
+glob let g_c_music_ballerina = 2;
+glob let g_c_music_none = 3;
+glob let mut g_current_music = null;
+
+// joystick constants 
+glob let g_c_joystick_radius = 90;
+glob let g_c_joystick_deadzone = 10;
+glob let mut g_joystick_active = false;
+glob let mut g_joystick_center = create_vector2(0, 0);
+glob let mut g_joystick_position = create_vector2(0, 0);
+glob let mut g_joystick_direction = create_vector2(0, 0);
+glob let mut g_pointer_was_active = false;
+
+glob let mut g_elapsed = 0;
+glob let mut g_debug = false;
+glob let mut g_in_game = true;
+glob let mut g_wave_state = g_c_wave_state_transition;
+glob let mut g_score = 0;
+glob let mut g_screen = g_c_screen_menu;
+glob let mut g_previous_screen = g_c_screen_game;
+glob let mut g_music_state = g_c_music_none;
+
+// dorg constants
+glob let g_c_dorg_speed = 400;
+glob let g_c_dorg_height = 70;
+glob let g_c_dorg_radius = g_c_dorg_height / 4;
+
+// dorg state
+glob let mut g_dorg_dead = false;
+glob let mut g_dorg_pos_x = 400;
+glob let mut g_dorg_pos_y = 400;
+
+// fork constants
+glob let g_c_fork_speed = 150;
+glob let g_c_fork_height = 40;
+glob let g_c_fork_radius = g_c_fork_height / 3;
+glob let g_c_max_forks = 15;
+glob let g_c_forks_multiplier = 3;
+
+// key constants
+glob let g_c_key_height = 40;
+glob let g_c_key_radius = 20;
+glob let g_c_max_keys = 15;
+glob let g_c_keys_multiplier = 3;
+
+// porg
+glob let g_c_porg_speed = 400;
+glob let g_c_porg_height = 40;
+glob let g_c_porg_radius = g_c_porg_height / 3;
+glob let g_c_porg_animation_speed = 0.2;
+
+
+// ballerina
+glob let g_c_ballerina_height = 140;
+glob let g_c_ballerina_radius = g_c_ballerina_height / 4;
+glob let g_c_ballerina_speed = 500;
+glob let g_c_ballerina_multiplier = 2;
+
+
+fu debug_print(p_msg) {
+  if g_debug? print p_msg;
+}
+
+fu exp(p_base, p_exp) {
+  let mut res = 1;
+  for let mut i = 0; i < p_exp; i = i + 1? {
+    res = res * p_base;
+  }
+  return res;
+}
+
+fu min(p_first, p_second) {
+  if p_second < p_first? return p_second;
+  return p_first;
+}
+
+fu max(p_first, p_second) {
+  if p_first < p_second? return p_second;
+  return p_first;
+}
+
+fu clamp(p_val, p_min, p_max) {
+  return max(p_min, min(p_val, p_max));
+}
+
+fu point_in_aabb(p_px, p_py, p_x, p_y, p_w, p_h) {
+  let hw = p_w / 2;
+  let hh = p_h / 2;
+  return (p_px < p_x + hw) and (p_px > p_x - hw) and (p_py < p_y + hh) and (p_py > p_y - hh);
+}
+
+fu circles_collide(p_x1, p_y1, p_x2, p_y2, p_r1, p_r2) {
+  return vector2_distance_sqr(create_vector2(p_x1, p_y1), create_vector2(p_x2, p_y2)) <= ((p_r1 + p_r2) * (p_r1 + p_r2));
+}
+
+fu load_game_texture(path) {
+  let texture = load_texture(path);
+  if texture == null? {
+    let err = str_concat("failed to load: ", path);
+    print err;
+    set_error(err);
+  }
+  return texture;
+}
+
+fu load_game_music(path) {
+  let music = load_music(path);
+  if music == null? {
+    let err = str_concat("failed to load: ", path);
+    print err;
+    set_error(err);
+  }
+  return music;
+}
+
+fu load_textures() {
+  glob let g_c_dorg_texture = load_game_texture("game/assets/textures/dorg/dorg.png");
+  if g_c_dorg_texture == null? {
+    return false; 
+  }
+  set_texture_filter(g_c_dorg_texture, texture_filter_linear);
+  glob let g_c_dorg_texture_width = texture_width(g_c_dorg_texture);
+  glob let g_c_dorg_texture_height = texture_height(g_c_dorg_texture);
+
+  glob let g_c_fork_texture = load_game_texture("game/assets/textures/fork/fork.png");
+  if g_c_fork_texture == null? {
+    return false;
+  }
+  set_texture_filter(g_c_fork_texture, texture_filter_linear);
+  glob let g_c_fork_texture_width = texture_width(g_c_fork_texture);
+  glob let g_c_fork_texture_height = texture_height(g_c_fork_texture);
+  
+  glob let g_c_death_background = load_game_texture("game/assets/textures/backgrounds/death.png");
+  if g_c_death_background == null? {
+    return false;
+  }
+  set_texture_filter(g_c_death_background, texture_filter_linear);
+  glob let g_c_death_background_width = texture_width(g_c_death_background);
+  glob let g_c_death_background_height = texture_height(g_c_death_background);
+
+  glob let g_c_key_texture = load_game_texture("game/assets/textures/key/key.png");
+  if g_c_key_texture == null? {
+    return false;
+  }
+  set_texture_filter(g_c_key_texture, texture_filter_linear);
+  glob let g_c_key_texture_width = texture_width(g_c_key_texture);
+  glob let g_c_key_texture_height = texture_height(g_c_key_texture);
+
+  glob let g_c_porg_texture_1 = load_game_texture("game/assets/textures/fork/fork_3d_1.png");
+  if g_c_porg_texture_1 == null? {
+    return false;
+  }
+  set_texture_filter(g_c_porg_texture_1, texture_filter_linear);
+  glob let g_c_porg_texture_1_width = texture_width(g_c_porg_texture_1);
+  glob let g_c_porg_texture_1_height = texture_height(g_c_porg_texture_1);
+
+  glob let g_c_porg_texture_2 = load_game_texture("game/assets/textures/fork/fork_3d_2.png");
+  if g_c_porg_texture_2 == null? {
+    return false;
+  }
+  set_texture_filter(g_c_porg_texture_2, texture_filter_linear);
+  glob let g_c_porg_texture_2_width = texture_width(g_c_porg_texture_2);
+  glob let g_c_porg_texture_2_height = texture_height(g_c_porg_texture_2);
+  
+  glob let g_c_porg_texture_3 = load_game_texture("game/assets/textures/fork/fork_3d_3.png");
+  if g_c_porg_texture_3 == null? {
+    return false;
+  }
+  set_texture_filter(g_c_porg_texture_3, texture_filter_linear);
+  glob let g_c_porg_texture_3_width = texture_width(g_c_porg_texture_3);
+  glob let g_c_porg_texture_3_height = texture_height(g_c_porg_texture_3);
+  
+  glob let g_c_porg_texture_4 = load_game_texture("game/assets/textures/fork/fork_3d_4.png");
+  if g_c_porg_texture_4 == null? {
+    return false;
+  }
+  set_texture_filter(g_c_porg_texture_4, texture_filter_linear);
+  glob let g_c_porg_texture_4_width = texture_width(g_c_porg_texture_4);
+  glob let g_c_porg_texture_4_height = texture_height(g_c_porg_texture_4);
+
+  glob let g_c_ballerina_texture = load_game_texture("game/assets/textures/ballerina/slendrina.png");
+  if g_c_ballerina_texture == null? {
+    return false;
+  }
+  set_texture_filter(g_c_ballerina_texture, texture_filter_linear);
+  glob let g_c_ballerina_texture_width = texture_width(g_c_ballerina_texture);
+  glob let g_c_ballerina_texture_height = texture_height(g_c_ballerina_texture);
+
+  glob let g_c_menu_texture = load_game_texture("game/assets/textures/backgrounds/menu.png");
+  if g_c_menu_texture == null? {
+    return false;
+  }
+  set_texture_filter(g_c_menu_texture, texture_filter_linear);
+  glob let g_c_menu_texture_width = texture_width(g_c_menu_texture);
+  glob let g_c_menu_texture_height = texture_height(g_c_menu_texture);
+
+  return true;
+}
+
+fu load_musics() {
+  glob let g_c_project_32_1 = load_game_music("game/assets/audio/music/project_32.1.mp3");
+  if g_c_project_32_1 == null? return false;
+  glob let g_c_project_23 = load_game_music("game/assets/audio/music/project_23.mp3");
+  if g_c_project_23 == null? return false;
+  glob let g_c_project_24 = load_game_music("game/assets/audio/music/project_24.mp3");
+  if g_c_project_24 == null? return false;
+  glob let g_c_ballerina = load_game_music("game/assets/audio/music/ballerina.wav");
+  if g_c_ballerina == null? return false;
+  return true;
+}
+
+fu select_music() {
+  let rand = random_range(1, 2);
+  if rand == 1? return g_c_project_23;
+  return g_c_project_24;
+}
+
+fu music_menu() {
+  if g_music_state == g_c_music_menu?
+    return;
+
+  stop_music(g_c_ballerina);
+
+  if g_current_music != null?
+    stop_music(g_current_music);
+
+  play_music(g_c_project_32_1);
+  g_music_state = g_c_music_menu;
+}
+
+fu music_game() {
+  if g_music_state == g_c_music_game?
+    return;
+
+  stop_music(g_c_ballerina);
+  stop_music(g_c_project_32_1);
+
+  g_current_music = select_music();
+  play_music(g_current_music);
+
+  g_music_state = g_c_music_game;
+}
+
+fu music_ballerina() {
+  if g_music_state == g_c_music_ballerina?
+    return;
+
+  if g_current_music != null?
+    stop_music(g_current_music);
+
+  stop_music(g_c_project_32_1);
+
+  play_music(g_c_ballerina);
+
+  g_music_state = g_c_music_ballerina;
+}
+
+fu music_none() {
+  stop_music(g_c_project_32_1);
+
+  if g_current_music != null?
+    stop_music(g_current_music);
+
+  stop_music(g_c_ballerina);
+
+  g_music_state = g_c_music_none;
+}
+
+fu get_high_score() {
+  let txt = load_file("game/data/high_score.txt");
+  if txt == null? return 0;
+  let high_score = number_from_str(txt);
+  if high_score == null? return 0;
+  return high_score;
+}
+
+fu save_high_score(p_score) {
+  save_to_file("game/data/high_score.txt", to_str_no_decimal(p_score));
+  return p_score;
+}
+
+fu joystick_update(p_delta) {
+  let pointer_active = is_pointer_active();
+  let pointer = get_logical_pointer();
+  let pointer_started = pointer_active and not g_pointer_was_active;
+
+  if pointer_started? {
+    g_joystick_active = true;
+    g_joystick_center = pointer;
+    g_joystick_position = pointer;
+    g_joystick_direction = create_vector2(0, 0);
+  }
+
+  if g_joystick_active? {
+    if pointer_active? {
+      g_joystick_position = pointer;
+      let delta = vector2_subtract(g_joystick_position, g_joystick_center);
+      let distance = vector2_length(delta);
+
+      if distance > g_c_joystick_radius? {
+        let direction = vector2_normalize(delta);
+	g_joystick_position = vector2_add(g_joystick_center, vector2_multiply(direction, g_c_joystick_radius));
+        g_joystick_direction = direction;
+      } else {
+	  if distance > g_c_joystick_deadzone? {
+            g_joystick_direction = vector2_normalize(delta);
+          } else {
+	      g_joystick_direction =
+              create_vector2(0, 0);
+            }
+        }
+      } else {
+            g_joystick_active = false;
+            g_joystick_direction = create_vector2(0, 0);
+        }
+  }
+  g_pointer_was_active = pointer_active;
+}
+
+fu keyboard_update(p_delta) {
+  let mut x = 0;
+  let mut y = 0;
+  if is_key_down(key_w)? {
+    y = -1;
+  } else if is_key_down(key_s)? {
+    y = 1;
+  }
+  if is_key_down(key_a)? {
+    x = -1;
+  } else if is_key_down(key_d)? {
+    x = 1;
+  }
+  g_joystick_direction = create_vector2(x, y);
+  return x != 0 or y != 0;
+}
+
+fu joystick_draw() {
+  if not g_joystick_active? {
+    return;
+  }
+  draw_circle(vector2_x(g_joystick_center), vector2_y(g_joystick_center), g_c_joystick_radius, create_color(155, 155, 155, 155));
+  draw_circle(vector2_x(g_joystick_position), vector2_y(g_joystick_position), 35, create_color(220, 220, 220, 155));
+}
+
+// gets called on start
+glob fu init() {
+  set_screen_prop(screen_prop_filter, texture_filter_linear);
+  set_screen_prop(screen_prop_width, g_c_arena_bound_x);
+  set_screen_prop(screen_prop_height, g_c_arena_bound_y);
+  set_screen_prop(screen_prop_scale, screen_scale_letterbox);
+  return load_textures() and load_musics();
+}
+
+fu draw(p_tex, p_pos_x, p_pos_y, p_ref_height, p_tex_width, p_tex_height, p_rot, p_col) {
+  let scale = p_ref_height / p_tex_height;
+  let dst_width = p_tex_width * scale;
+  let dst_height = p_tex_height * scale;
+  let origin_x = dst_width / 2;
+  let origin_y = dst_height / 2;
+  draw_texture_pro(p_tex, 0, 0, p_tex_width, p_tex_height, p_pos_x, p_pos_y, dst_width, dst_height, origin_x, origin_y, p_rot, p_col);
+}
+
+// dorg 
+
+fu dorg_end(p_dead) {
+  g_dorg_dead = p_dead;
+  g_dorg_pos_x = g_c_arena_bound_x / 2;
+  g_dorg_pos_y = g_c_arena_bound_y / 2;
+}
+
+fu draw_dorg_collision() {
+  draw_circle(g_dorg_pos_x, g_dorg_pos_y, g_c_dorg_radius, g_c_collision_color);
+}
+
+fu draw_dorg() {
+  draw(g_c_dorg_texture, g_dorg_pos_x, g_dorg_pos_y, g_c_dorg_height, g_c_dorg_texture_width, g_c_dorg_texture_height, 0, white);
+  if g_debug?
+    draw_dorg_collision();
+}
+
+fu dorg_collision_with_fork(p_which, p_fork_x, p_fork_y) {
+  g_dorg_dead = true;
+}
+
+fu dorg_collision_with_key(p_which, p_key_x, p_key_y) {
+  g_score = g_score + 1;
+}
+
+fu dorg_update(p_delta) {
+  let direction = g_joystick_direction;
+
+  if vector2_length(direction) > 0? {
+    let step = g_c_dorg_speed * p_delta;
+
+    g_dorg_pos_x =
+      g_dorg_pos_x + vector2_x(direction) * step;
+
+    g_dorg_pos_y =
+      g_dorg_pos_y + vector2_y(direction) * step;
+  }
+
+  g_dorg_pos_x = clamp(
+    g_dorg_pos_x,
+    g_c_dorg_radius,
+    g_c_arena_bound_x - g_c_dorg_radius
+  );
+
+  g_dorg_pos_y = clamp(
+    g_dorg_pos_y,
+    g_c_dorg_radius,
+    g_c_arena_bound_y - g_c_dorg_radius
+  );
+
+  draw_dorg();
+}
+
+// keys
+let mut keys_positions_x = create_array();
+let mut keys_positions_y = create_array();
+let mut keys_spawn_threshold = 0;
+let mut keys_timer = 0;
+
+fu draw_key_collision(p_x, p_y) {
+  draw_circle(p_x, p_y, g_c_key_radius, g_c_collision_color);
+}
+
+fu draw_key(p_x, p_y) {
+  draw(g_c_key_texture, p_x, p_y, g_c_key_height, g_c_key_texture_width, g_c_key_texture_height, 0, white);
+  if g_debug?
+    draw_key_collision(p_x, p_y);
+}
+
+fu key_update(p_delta, p_x, p_y, p_collision_cb) {
+  let key_pos = create_vector2(p_x, p_y);
+  let dorg_pos = create_vector2(g_dorg_pos_x, g_dorg_pos_y);
+  if circles_collide(g_dorg_pos_x, g_dorg_pos_y, p_x, p_y, g_c_dorg_radius, g_c_key_radius)? {
+    p_collision_cb(p_x, p_y);
+    return;
+  }
+  draw_key(p_x, p_y);
+}
+
+fu emplace_key() {
+  array_push(
+    keys_positions_x,
+    random_range(g_c_key_radius, g_c_arena_bound_x - g_c_key_radius)
+  );
+  array_push(
+    keys_positions_y,
+    random_range(g_c_key_radius, g_c_arena_bound_y - g_c_key_radius)
+  );
+}
+
+fu remove_key(p_index) {
+  array_remove(keys_positions_x, p_index, p_index);
+  array_remove(keys_positions_y, p_index, p_index);
+}
+
+fu keys_new_wave(p_wave_num) {
+  keys_timer = 0;
+  keys_spawn_threshold = 2.5;
+
+  emplace_key();
+}
+
+fu keys_update(p_delta) {
+  keys_timer = keys_timer + p_delta;
+
+  if keys_timer >= keys_spawn_threshold? {
+    keys_timer = 0;
+
+    if array_length(keys_positions_x) < g_c_max_keys? {
+      emplace_key();
+    }
+  }
+
+  for let mut i = array_length(keys_positions_x) - 1; i >= 0; i = i - 1? {
+    let x = array_at(keys_positions_x, i);
+    let y = array_at(keys_positions_y, i);
+
+    key_update(p_delta, x, y, fu(p_x, p_y) {
+      g_score = g_score + 1;
+      remove_key(i);
+    });
+  }
+}
+
+fu keys_end() {
+  array_clear(keys_positions_x);
+  array_clear(keys_positions_y);
+  keys_timer = 0;
+}
+
+// fork
+let mut forks_positions_x = create_array();
+let mut forks_positions_y = create_array();
+let mut forks_num= 0;
+let mut forks_timer = 0;
+let mut forks_spawn_threshold = 0;
+
+
+fu draw_fork_collision(p_x, p_y) {
+  draw_circle(p_x, p_y, g_c_fork_radius, g_c_collision_color);
+}
+
+fu draw_fork(p_x, p_y) {
+  draw(g_c_fork_texture, p_x, p_y, g_c_fork_height, g_c_fork_texture_width, g_c_fork_texture_height, 0, white);
+  if g_debug?
+    draw_fork_collision(p_x, p_y);
+}
+
+fu fork_update(p_delta, p_x, p_y, p_update_cb, p_collision_cb) {
+  let fork_pos = create_vector2(p_x, p_y);
+  let dorg_pos = create_vector2(g_dorg_pos_x, g_dorg_pos_y);
+  let dir = vector2_normalize(vector2_subtract(dorg_pos, fork_pos));
+
+  let x = p_x + vector2_x(dir) * g_c_fork_speed * p_delta;
+  let y = p_y + vector2_y(dir) * g_c_fork_speed * p_delta;
+  if circles_collide(g_dorg_pos_x, g_dorg_pos_y, p_x, p_y, g_c_dorg_radius, g_c_fork_radius)? {
+    p_collision_cb(x, y);
+  }
+  p_update_cb(x, y);
+  draw_fork(x, y);
+}
+
+// TODO when we add other fork types alot of this code can be reused (depends on each fork spawning behavior)
+fu add_fork () {
+  fu add_fork_positions(p_x, p_y) {
+    array_push(forks_positions_y, p_y);
+    array_push(forks_positions_x, p_x);
+  }
+    // idk if there is cleaner way but this will do!
+  let side = random_range(1, 4);
+  if side == 1? { // right
+    // we need random y only 
+    let y = random_range(0, g_c_arena_bound_y + g_c_fork_radius);
+    let x = g_c_arena_bound_x + g_c_fork_radius; // fork is not bound by arena (this adds half fork to the right of arena too but its intentional)
+    add_fork_positions(x, y);
+    return;
+  }
+  if side == 2? { // left
+    // we need random y only 
+    let y = random_range(0, g_c_arena_bound_y + g_c_fork_radius);
+    let x = -g_c_fork_radius; 
+    add_fork_positions(x, y);
+    return;
+  }
+  if side == 3? { // top
+    // we need random x only 
+    let x = random_range(0, g_c_arena_bound_x + g_c_fork_radius);
+    let y = -g_c_fork_radius;
+    add_fork_positions(x, y);
+    return;
+  }
+  // bottom
+  // we need random x only 
+  let x = random_range(0, g_c_arena_bound_x + g_c_fork_radius);
+  let y = g_c_arena_bound_y + g_c_fork_radius;
+  add_fork_positions(x, y);
+}
+
+fu forks_new_wave(p_wave_num) {
+  forks_timer = 0;
+  forks_num = g_c_forks_multiplier * p_wave_num;
+  forks_spawn_threshold = g_c_wave_duration / forks_num;
+  add_fork(); // waves always starts with one of each type
+}
+
+fu forks_end() {
+  array_clear(forks_positions_x);
+  array_clear(forks_positions_y);
+  forks_timer = 0;
+  forks_num = 0;
+  forks_spawn_threshold = 0;
+}
+
+fu forks_update(p_delta) {
+  if array_length(forks_positions_x) <= 0? return;
+  if (forks_timer = forks_timer + p_delta) >= forks_spawn_threshold? {
+    add_fork();
+    forks_timer = 0;
+  }
+  let mut i = 0;
+  array_foreach(forks_positions_x, fu (p_x) {
+    let y = array_at(forks_positions_y, i);
+    fork_update(p_delta, p_x, y, fu (p_x, p_y) {
+      array_set(forks_positions_x, i, p_x);
+      array_set(forks_positions_y, i, p_y);
+    }, fu(p_x, p_y) {
+      dorg_collision_with_fork(i, p_x, p_y);
+    });
+    i = i + 1;
+  });
+}
+
+// porg 
+let mut porg_positions_x = create_array();
+let mut porg_positions_y = create_array();
+let mut porg_directions_x = create_array();
+let mut porg_directions_y = create_array();
+
+let mut porg_animation_timer = 0;
+let mut porg_animation_frame = 0;
+
+fu add_porg() {
+  let mut x = 0;
+  let mut y = 0;
+  let mut dir_x = 0;
+  let mut dir_y = 0;
+
+  let side = random_range(1, 4);
+
+  if side == 1? {
+    // right
+    x = g_c_arena_bound_x + g_c_porg_radius;
+    y = random_range(0, g_c_arena_bound_y);
+    dir_x = -1;
+    dir_y = random_range(-1, 1);
+  }
+
+  if side == 2? {
+    // left
+    x = -g_c_porg_radius;
+    y = random_range(0, g_c_arena_bound_y);
+    dir_x = 1;
+    dir_y = random_range(-1, 1);
+  }
+
+  if side == 3? {
+    // top
+    x = random_range(0, g_c_arena_bound_x);
+    y = -g_c_porg_radius;
+    dir_x = random_range(-1, 1);
+    dir_y = 1;
+  }
+
+  if side == 4? {
+    // bottom
+    x = random_range(0, g_c_arena_bound_x);
+    y = g_c_arena_bound_y + g_c_porg_radius;
+    dir_x = random_range(-1, 1);
+    dir_y = -1;
+  }
+
+  let dir = vector2_normalize(create_vector2(dir_x, dir_y));
+
+  array_push(porg_positions_x, x);
+  array_push(porg_positions_y, y);
+  array_push(porg_directions_x, vector2_x(dir));
+  array_push(porg_directions_y, vector2_y(dir));
+}
+
+fu draw_porg(p_x, p_y) {
+  let mut texture = g_c_porg_texture_1;
+  let mut width = g_c_porg_texture_1_width;
+  let mut height = g_c_porg_texture_1_height;
+
+  if porg_animation_frame == 1? {
+    texture = g_c_porg_texture_2;
+    width = g_c_porg_texture_2_width;
+    height = g_c_porg_texture_2_height;
+  }
+
+  if porg_animation_frame == 2? {
+    texture = g_c_porg_texture_3;
+    width = g_c_porg_texture_3_width;
+    height = g_c_porg_texture_3_height;
+  }
+
+  if porg_animation_frame == 3? {
+    texture = g_c_porg_texture_4;
+    width = g_c_porg_texture_4_width;
+    height = g_c_porg_texture_4_height;
+  }
+
+  draw(
+    texture,
+    p_x,
+    p_y,
+    g_c_porg_height,
+    width,
+    height,
+    sin(p_x),
+    white
+  );
+}
+
+fu porg_update(
+  p_delta,
+  p_x,
+  p_y,
+  p_dir_x,
+  p_dir_y,
+  p_update_cb,
+  p_collision_cb
+) {
+  porg_animation_timer = porg_animation_timer + p_delta;
+
+  if porg_animation_timer >= g_c_porg_animation_speed? {
+    porg_animation_timer = 0;
+    porg_animation_frame = porg_animation_frame + 1;
+
+  if porg_animation_frame >= 4?
+    porg_animation_frame = 0;
+  }
+
+  let mut x =
+    p_x +
+    p_dir_x * g_c_porg_speed * p_delta;
+
+  let mut y =
+    p_y +
+    p_dir_y * g_c_porg_speed * p_delta;
+
+  let mut dir_x = p_dir_x;
+  let mut dir_y = p_dir_y;
+
+  if x <= g_c_porg_radius? {
+    x = g_c_porg_radius;
+    dir_x = -dir_x;
+  }
+
+  if x >= g_c_arena_bound_x - g_c_porg_radius? {
+    x = g_c_arena_bound_x - g_c_porg_radius;
+    dir_x = -dir_x;
+  }
+
+  if y <= g_c_porg_radius? {
+    y = g_c_porg_radius;
+    dir_y = -dir_y;
+  }
+
+  if y >= g_c_arena_bound_y - g_c_porg_radius? {
+    y = g_c_arena_bound_y - g_c_porg_radius;
+    dir_y = -dir_y;
+  }
+
+  if circles_collide(
+    g_dorg_pos_x,
+    g_dorg_pos_y,
+    x,
+    y,
+    g_c_dorg_radius,
+    g_c_porg_radius
+  )? {
+    p_collision_cb(x, y);
+  }
+
+  p_update_cb(x, y, dir_x, dir_y);
+
+  draw_porg(x, y);
+}
+
+fu porgs_update(p_delta) {
+  let mut i = 0;
+
+  array_foreach(porg_positions_x, fu(p_x) {
+    let y = array_at(porg_positions_y, i);
+    let dir_x = array_at(porg_directions_x, i);
+    let dir_y = array_at(porg_directions_y, i);
+
+    porg_update(
+      p_delta,
+      p_x,
+      y,
+      dir_x,
+      dir_y,
+
+      fu(p_x, p_y, p_dir_x, p_dir_y) {
+        array_set(porg_positions_x, i, p_x);
+        array_set(porg_positions_y, i, p_y);
+        array_set(porg_directions_x, i, p_dir_x);
+        array_set(porg_directions_y, i, p_dir_y);
+      },
+
+      fu(p_x, p_y) {
+        dorg_collision_with_fork(i, p_x, p_y);
+      }
+    );
+
+    i = i + 1;
+  });
+}
+
+fu porgs_end() {
+  array_clear(porg_positions_x);
+  array_clear(porg_positions_y);
+  array_clear(porg_directions_x);
+  array_clear(porg_directions_y);
+}
+
+fu porgs_new_wave(p_wave_num) {
+  if p_wave_num >= 2?
+    add_porg();
+
+  if p_wave_num >= 4?
+    add_porg();
+
+  if p_wave_num >= 6?
+    add_porg();
+
+  if p_wave_num >= 8?
+    add_porg();
+
+  if p_wave_num >= 10?
+    add_porg();
+}
+
+// ballerina
+
+let mut ballerina_pos_x = 0;
+let mut ballerina_pos_y = 0;
+
+let mut ballerina_dir_x = 0;
+let mut ballerina_step_y = 0;
+
+let mut ballerina_rows = 0;
+let mut ballerina_active = false;
+
+fu start_ballerina() {
+  ballerina_active = true;
+  ballerina_rows = 0;
+
+  let side = random_range(1, 4);
+
+  // top left
+  if side == 1? {
+    ballerina_pos_x = g_c_ballerina_radius;
+    ballerina_pos_y = g_c_ballerina_radius;
+    ballerina_dir_x = 1;
+    ballerina_step_y = 1;
+  }
+
+  // top right
+  if side == 2? {
+    ballerina_pos_x = g_c_arena_bound_x - g_c_ballerina_radius;
+    ballerina_pos_y = g_c_ballerina_radius;
+    ballerina_dir_x = -1;
+    ballerina_step_y = 1;
+  }
+
+  // bottom left
+  if side == 3? {
+    ballerina_pos_x = g_c_ballerina_radius;
+    ballerina_pos_y = g_c_arena_bound_y - g_c_ballerina_radius;
+    ballerina_dir_x = 1;
+    ballerina_step_y = -1;
+  }
+
+  // bottom right
+  if side == 4? {
+    ballerina_pos_x = g_c_arena_bound_x - g_c_ballerina_radius;
+    ballerina_pos_y = g_c_arena_bound_y - g_c_ballerina_radius;
+    ballerina_dir_x = -1;
+    ballerina_step_y = -1;
+  }
+}
+
+fu draw_ballerina_collision(p_x, p_y) {
+  draw_circle(p_x, p_y, g_c_ballerina_radius, g_c_collision_color);
+}
+
+fu draw_ballerina(p_x, p_y) {
+  draw(
+    g_c_ballerina_texture,
+    p_x,
+    p_y,
+    g_c_ballerina_height,
+    g_c_ballerina_texture_width,
+    g_c_ballerina_texture_height,
+    0,
+    white
+  );
+
+  if g_debug?
+    draw_ballerina_collision(p_x, p_y);
+}
+
+
+// TODO: use ballerian texture
+fu ballerina_update(p_delta) {
+  if not ballerina_active?
+    return false;
+
+  ballerina_pos_x =
+    ballerina_pos_x +
+    ballerina_dir_x * g_c_ballerina_speed * p_delta;
+
+  let mut reached_edge = false;
+
+  if ballerina_dir_x > 0 and ballerina_pos_x >= g_c_arena_bound_x - g_c_ballerina_radius? {
+    ballerina_pos_x = g_c_arena_bound_x - g_c_ballerina_radius;
+    reached_edge = true;
+  }
+
+  if ballerina_dir_x < 0 and ballerina_pos_x <= g_c_ballerina_radius? {
+    ballerina_pos_x = g_c_ballerina_radius;
+    reached_edge = true;
+  }
+
+  if reached_edge? {
+    ballerina_rows = ballerina_rows + 1;
+
+    ballerina_pos_y =
+      ballerina_pos_y +
+      ballerina_step_y * g_c_ballerina_height;
+
+    if ballerina_pos_y < g_c_ballerina_radius or
+       ballerina_pos_y > g_c_arena_bound_y - g_c_ballerina_radius? {
+      ballerina_active = false;
+      return false;
+    }
+
+    ballerina_dir_x = -ballerina_dir_x;
+  }
+
+  draw_ballerina(
+    ballerina_pos_x,
+    ballerina_pos_y
+  );
+
+  if circles_collide(
+    g_dorg_pos_x,
+    g_dorg_pos_y,
+    ballerina_pos_x,
+    ballerina_pos_y,
+    g_c_dorg_radius,
+    g_c_ballerina_radius
+  )? {
+    dorg_collision_with_fork(
+      0,
+      ballerina_pos_x,
+      ballerina_pos_y
+    );
+  }
+
+  return true;
+}
+
+fu ballerina_end() {
+  ballerina_active = false;
+  ballerina_pos_x = 0;
+  ballerina_pos_y = 0;
+  ballerina_dir_x = 0;
+  ballerina_step_y = 0;
+  ballerina_rows = 0;
+}
+
+// no need for globals since it's local to the wave updaters so we let them capture it
+let mut _wave_timer = 0;
+let mut _num_waves = 2;
+
+// makes the wave effective. this should be called after transition is done
+fu start_new_wave() {
+  _wave_timer = 0;
+  _num_waves = _num_waves + 1;
+  forks_new_wave(_num_waves);
+  porgs_new_wave(_num_waves);
+  keys_new_wave(_num_waves);
+}
+
+fu update_running_wave(p_delta) {
+  if (_wave_timer = _wave_timer + p_delta) >= g_c_wave_duration? {
+    if modulo(_num_waves, 3) == 0? {
+      start_ballerina();
+      g_wave_state = g_c_wave_state_ballerina;
+      return true;
+    }
+
+    return false;
+  }
+
+  forks_update(p_delta);
+  keys_update(p_delta);
+  porgs_update(p_delta);
+
+  return true;
+}
+
+fu end_running_wave() {
+  forks_end();
+  keys_end();
+  porgs_end();
+}
+
+
+let mut _wave_transition_timer = 0;
+
+// starts the transition timer and sets the state to transition
+fu start_wave_transition() {
+  g_wave_state = g_c_wave_state_transition;
+  _wave_transition_timer = 0;
+}
+
+// updaetes the timer
+fu update_wave_transition(p_delta) {
+  if (_wave_transition_timer = _wave_transition_timer + p_delta) >= g_c_wave_transition_duration?
+    return false;
+  
+  let wave_str = str_concat("wave: ", to_str_no_decimal(_num_waves));
+  let wave_sz = measure_text(g_c_font, wave_str, 32, 2);
+  draw_text(g_c_font, wave_str, g_c_arena_bound_x/2, g_c_arena_bound_y/2, vector2_x(wave_sz)/2, vector2_y(wave_sz)/2, 0, 32, 2, black);
+  return true;
+}
+
+fu wave_end() {
+  _wave_timer = 0;
+  _num_waves = 0;
+  _wave_transition_timer = 0;
+  g_wave_state = g_c_wave_state_transition;
+}
+
+fu update_ballerina_wave(p_delta) {
+  forks_update(p_delta);
+  keys_update(p_delta);
+  porgs_update(p_delta);
+
+  if not ballerina_update(p_delta)? {
+    g_score = g_score * g_c_ballerina_multiplier;
+    ballerina_active = false;
+    end_running_wave();
+    start_wave_transition();
+
+    return false;
+  }
+
+  return true;
+}
+
+fu wave_update(p_delta) {
+  if g_wave_state == g_c_wave_state_appending? {
+    start_new_wave();
+    g_wave_state = g_c_wave_state_started;
+  } else if g_wave_state == g_c_wave_state_transition? {
+    if not update_wave_transition(p_delta)?
+      g_wave_state = g_c_wave_state_appending;
+  } else if g_wave_state == g_c_wave_state_ballerina? {
+    update_ballerina_wave(p_delta);
+  } else {
+    if not update_running_wave(p_delta)? {
+      end_running_wave();
+      start_wave_transition();
+    }
+    return true;
+  }
+
+  return false;
+}
+
+fu game_end(p_restart) {
+  dorg_end(!p_restart);
+  forks_end();
+  porgs_end();
+  ballerina_end();
+  wave_end();
+  keys_end();
+  if g_score > get_high_score()? {
+    save_high_score(g_score);
+  }
+  g_score = 0;
+}
+
+fu update_game_screen(p_delta) {
+  let bg_a = create_color(132,174,190, 255);
+  let bg_b = create_color(84,161,207, 255);
+  clear_screen(bg_a);
+
+  for let mut y = 0; y < g_c_arena_bound_y + 80; y = y + 80? {
+    for let mut x = 0; x < g_c_arena_bound_x + 80; x = x + 80? {
+      let checker = modulo((x / 80) + (y / 80), 2);
+
+       if checker == 1? {
+         draw_rect(x, y, 80, 80, 40, 40, 0, bg_b);
+       }
+     }
+   }
+  
+  if !keyboard_update(p_delta)?
+    joystick_update(p_delta);
+  wave_update(p_delta);
+  dorg_update(p_delta);
+  joystick_draw();
+  return true;
+}
+
+fu im_button(p_x, p_y, p_w, p_h, p_text, p_text_sz, p_spacing, p_color_idle, p_color_hot, p_color_active) {
+  let mouse_x = get_logical_pointer_x();
+  let mouse_y = get_logical_pointer_y();
+  let hot = point_in_aabb(mouse_x, mouse_y, p_x, p_y, p_w, p_h);
+  let active = hot and is_mouse_button_released(mouse_button_left);
+  let mut selected_color = p_color_idle;
+  if active? {
+    selected_color = p_color_active;
+  } else if hot? {
+    selected_color = p_color_hot;
+  }
+  draw_rect(p_x, p_y, p_w, p_h, p_w/2, p_h/2, 0, selected_color);
+  let text_sz = measure_text(g_c_font, p_text, p_text_sz, p_spacing);
+  let text_w = vector2_x(text_sz);
+  let text_h = vector2_y(text_sz);
+  draw_text(g_c_font, p_text, p_x, p_y, text_w/2, text_h/2, 0, p_text_sz, p_spacing, white);
+  return active;
+}
+
+let mut _death_screen_timer = 0;
+fu update_death_screen(p_delta) {
+  _death_screen_timer = _death_screen_timer + p_delta;
+  clear_screen(black);
+  let death = "You got ";
+  let forked = "FORKED";
+  let font_sz = 32;
+  let spacing = 2;
+  let center_x = g_c_arena_bound_x / 2;
+  let center_y = g_c_arena_bound_y / 2;
+  let death_sz = measure_text(g_c_font, death, font_sz + 6, spacing);
+  let forked_sz = measure_text(g_c_font, forked, font_sz + 10, spacing);
+  let button_width = 200;
+  let button_height = 100;
+  let mut alpha = _death_screen_timer * 255 / 2;
+  let high_score = get_high_score();
+  if alpha > 255? alpha = 255;
+  let forked_color = create_color(4, 247, 4, alpha);
+  draw(g_c_death_background, g_c_arena_bound_x/2, g_c_arena_bound_y/2, 720, g_c_death_background_width, g_c_death_background_height, 0, white);
+  draw_text(g_c_font, death, center_x - vector2_x(forked_sz) / 2, center_y - (vector2_y(forked_sz) + vector2_y(death_sz)), vector2_x(death_sz)/2, vector2_y(death_sz)/2, 0, font_sz + 6, spacing, g_c_death_color);
+  draw_text(g_c_font, forked, center_x + vector2_x(forked_sz) / 2, center_y - (vector2_y(forked_sz) + vector2_y(death_sz)), vector2_x(forked_sz)/2, vector2_y(forked_sz)/2, 0, font_sz + 10, spacing, forked_color);
+  let score_str = str_concat("score: ", to_str_no_decimal(g_score));
+  let high_score_txt = to_str_no_decimal(high_score);
+  let high_score_str = str_concat("best run: ", high_score_txt);
+  let score_font_sz = font_sz + 6;
+  let score_sz = measure_text(g_c_font, score_str, score_font_sz, spacing);
+  let high_score_sz = measure_text(g_c_font, high_score_str, score_font_sz, spacing);
+  draw_text(g_c_font, score_str, center_x - vector2_x(high_score_sz), center_y, vector2_x(score_sz)/2, vector2_y(score_sz)/2, 0, score_font_sz, spacing, white);
+  draw_text(g_c_font, high_score_str, center_x + vector2_x(high_score_sz), center_y, vector2_x(high_score_sz)/2, vector2_y(high_score_sz)/2, 0, score_font_sz, spacing, create_color(247, 223, 30, 255));
+  if im_button(center_x - button_width/2 - 20, center_y + max(vector2_y(forked_sz), vector2_y(death_sz)) + 20 + button_height / 2, button_width, button_height, "Retry?", 26, 2, create_color(200, 200, 200, 128), create_color(29, 78, 216, 255), create_color(30, 58, 138, 255))? {
+    _death_screen_timer = 0;
+    game_end(true);
+  }
+   if im_button(center_x + button_width/2 + 20, center_y + max(vector2_y(forked_sz), vector2_y(death_sz)) + 20 + button_height / 2, button_width, button_height, "Back to Menu", 26, 2, create_color(200, 200, 200, 128), create_color(29, 78, 216, 255), create_color(30, 58, 138, 255))? {
+    _death_screen_timer = 0;
+    game_end(false);
+     g_screen = g_c_screen_menu;
+  }
+  return true;
+}
+
+fu draw_menu_background() {
+   draw(
+    g_c_menu_texture,
+    g_c_arena_bound_x / 2,
+    g_c_arena_bound_y / 2,
+    720,
+    g_c_menu_texture_width,
+    g_c_menu_texture_height,
+    0,
+    white
+  );
+}
+
+fu update_menu_screen(p_delta) {
+  clear_screen(black);
+  draw_menu_background();
+
+  let center_x = g_c_arena_bound_x / 2;
+
+  let dorg3 = "Dorg3";
+  let dorg3_sz = measure_text(g_c_font, dorg3, 56, 3);
+
+  draw_text(
+    g_c_font,
+    dorg3,
+    center_x - vector2_x(dorg3_sz) / 2,
+    180,
+    0,
+    0,
+    0,
+    56,
+    3,
+    create_color(20, 100, 200, 255)
+  );
+
+  if im_button(
+    center_x,
+    350,
+    240,
+    70,
+    "PLAY",
+    28,
+    2,
+    create_color(200, 200, 200, 255),
+    create_color(29, 78, 216, 255),
+    create_color(30, 58, 138, 255)
+  )? {
+    game_end(true);
+    g_screen = g_c_screen_game;
+  }
+
+  if im_button(
+    center_x,
+    440,
+    240,
+    70,
+    "SETTINGS",
+    28,
+    2,
+    create_color(200, 200, 200, 255),
+    create_color(29, 78, 216, 255),
+    create_color(30, 58, 138, 255)
+  )? {
+    g_screen = g_c_screen_settings;
+  }
+
+  if im_button(
+    center_x,
+    530,
+    240,
+    70,
+    "CREDITS",
+    28,
+    2,
+    create_color(200, 200, 200, 255),
+    create_color(29, 78, 216, 255),
+    create_color(30, 58, 138, 255)
+  )? {
+    g_screen = g_c_screen_credits;
+  }
+
+  let browser_notice = "if you are playing from web browser, click anywhere to enable menu music.";
+  let browser_notice_sz = measure_text(g_c_roboto_font, browser_notice, 18, 2);
+
+  draw_text(
+    g_c_roboto_font,
+    browser_notice,
+    center_x - vector2_x(browser_notice_sz) / 2,
+    g_c_arena_bound_y - vector2_y(browser_notice_sz) - 50,
+    0,
+    0,
+    0,
+    18,
+    3,
+    create_color(255, 255, 255, 155)
+  );
+
+  return true;
+}
+
+fu update_settings_screen(p_delta) {
+  clear_screen(black);
+  draw_menu_background();
+
+  let center_x = g_c_arena_bound_x / 2;
+
+  // title
+  let title = "SETTINGS";
+  let title_sz = measure_text(g_c_font, title, 40, 2);
+
+  draw_text(
+    g_c_font,
+    title,
+    center_x - vector2_x(title_sz) / 2,
+    150,
+    0, 0, 0,
+    40, 2,
+    white
+  );
+
+  // debug state
+  let mut debug_text = "DEBUG: OFF";
+  if g_debug? {
+    debug_text = "DEBUG: ON";
+  }
+
+  let debug_sz = measure_text(g_c_font, debug_text, 28, 2);
+
+  draw_text(
+    g_c_font,
+    debug_text,
+    center_x - vector2_x(debug_sz) / 2,
+    250,
+    0, 0, 0,
+    28, 2,
+    white
+  );
+
+  // toggle
+  if im_button(
+    center_x,
+    350,
+    300,
+    80,
+    "TOGGLE DEBUG",
+    26,
+    2,
+    create_color(150, 150, 150, 255),
+    create_color(29, 78, 216, 255),
+    create_color(30, 58, 138, 255)
+  )? {
+    g_debug = not g_debug;
+  }
+
+  // back
+  if im_button(
+    center_x,
+    500,
+    240,
+    70,
+    "BACK",
+    28,
+    2,
+    create_color(150, 150, 150, 255),
+    create_color(29, 78, 216, 255),
+    create_color(30, 58, 138, 255)
+  )? {
+    g_screen = g_c_screen_menu;
+  }
+
+  return true;
+}
+
+fu update_credits_screen(p_delta) {
+  clear_screen(black);
+  draw_menu_background();
+
+  let center_x = g_c_arena_bound_x / 2;
+
+  // title
+  let title = "CREDITS";
+  let title_sz = measure_text(g_c_font, title, 40, 2);
+
+  draw_text(
+    g_c_font,
+    title,
+    center_x - vector2_x(title_sz) / 2,
+    150,
+    0, 0, 0,
+    40, 2,
+    white
+  );
+
+  // qais
+  let qais = "awesome dorg3 by: qais @qais_alsaid";
+  let qais_sz = measure_text(g_c_font, qais, 24, 2);
+
+  draw_text(
+    g_c_font,
+    qais,
+    center_x - vector2_x(qais_sz) / 2,
+    280,
+    0, 0, 0,
+    32, 2,
+    white
+  );
+
+  // OpposingFork
+  let fork = "awesome dorg art and assets by: OpposingFork @opposingfork";
+  let fork_sz = measure_text(g_c_font, fork, 24, 2);
+
+  draw_text(
+    g_c_font,
+    fork,
+    center_x - vector2_x(fork_sz) / 2,
+    330,
+    0, 0, 0,
+    32, 2,
+    white
+  );
+
+  // ward
+  let music = "awesome music by: ward @ward08078";
+  let music_sz = measure_text(g_c_font, music, 24, 2);
+
+  draw_text(
+    g_c_font,
+    music,
+    center_x - vector2_x(music_sz) / 2,
+    380,
+    0, 0, 0,
+    32, 2,
+    white
+  );
+
+  // back
+  if im_button(
+    center_x,
+    500,
+    240,
+    70,
+    "BACK",
+    28,
+    2,
+    create_color(150, 150, 150, 255),
+    create_color(29, 78, 216, 255),
+    create_color(30, 58, 138, 255)
+  )? {
+    g_screen = g_c_screen_menu;
+  }
+
+  return true;
+}
+
+fu update_game(p_delta) {
+  if g_dorg_dead? {
+    return update_death_screen(p_delta);
+  }
+  return update_game_screen(p_delta);
+}
+
+fu music_update() {
+  if g_music_state == g_c_music_menu? {
+    update_music(g_c_project_32_1);
+  } else if g_music_state == g_c_music_game? {
+    update_music(g_current_music);
+  } else if g_music_state == g_c_music_ballerina? {
+    update_music(g_c_ballerina);
+  }
+}
+
+// gets called every frame
+glob fu update(p_delta) {
+  g_elapsed = g_elapsed + p_delta;
+
+  let mut result = true;
+
+  if g_screen == g_c_screen_game? {
+    result = update_game(p_delta);
+  } else if g_screen == g_c_screen_settings? {
+    result = update_settings_screen(p_delta);
+  } else if g_screen == g_c_screen_credits? {
+    result = update_credits_screen(p_delta);
+  } else {
+    result = update_menu_screen(p_delta);
+  }
+
+  if g_screen == g_c_screen_menu || g_screen == g_c_screen_settings || g_screen == g_c_screen_credits? {
+    music_menu();
+  } else if g_screen == g_c_screen_game? {
+      if g_dorg_dead? {
+      // keep whatever music was playing
+      } else if g_wave_state == g_c_wave_state_ballerina? {
+          music_ballerina();
+        } else {
+         music_game();
+        }
+    } else {
+	music_none();
+     }
+  music_update();
+  g_previous_screen = g_screen;
+
+  if g_screen == g_c_screen_game and not g_dorg_dead? {
+    let score_str = str_concat("SCORE: ", to_str_no_decimal(g_score));
+    draw_text(
+      g_c_font,
+      score_str,
+      20,
+      20,
+      0, 0, 0,
+      28, 1,
+      black
+    );
+  }
+
+  if g_debug? {
+    let mut fps = 0;
+    if p_delta > 0? fps = 1/p_delta;
+    let fps_str = str_concat("fps: ", to_str_no_decimal(fps));
+    let fps_sz = measure_text(g_c_font, fps_str, 24, 1);
+
+    draw_text(
+      g_c_font,
+      fps_str,
+      g_c_arena_bound_x - vector2_x(fps_sz) - 20,
+      20,
+      0, 0, 0,
+      24, 1,
+      black
+    );
+  }
+
+  return result;
+}
+// gets called on end
+glob fu shutdown() {
+}

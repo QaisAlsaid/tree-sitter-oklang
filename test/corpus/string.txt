@@ -1,0 +1,34 @@
+==================
+strings: interpolation
+==================
+
+let name = "fork";
+let msg = f"hello {name}, {1 + 2}!";
+let brace = f"{{literal}}";
+
+---
+
+(source_file
+  (let_decl
+    (binding
+      (ident))
+    (string_expr
+      (double_quoted_string)))
+  (let_decl
+    (binding
+      (ident))
+    (string_expr
+      (interpolated_string
+        (f_double_quoted
+          (interpolation
+            (ident))
+          (interpolation
+            (binary_expr
+              (number_expr)
+              (number_expr)))))))
+  (let_decl
+    (binding
+      (ident))
+    (string_expr
+      (interpolated_string
+        (f_double_quoted)))))
