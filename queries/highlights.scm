@@ -45,7 +45,7 @@
 (import_decl alias: (ident) @type)
 
 (class_fu_decl name: (ident) @constructor
-  (#match? @constructor "init" "deinit"))
+  (#any-of? @constructor "init" "deinit"))
 (binding name: (ident) @variable.builtin
   (#eq? @variable.builtin "_"))
 
