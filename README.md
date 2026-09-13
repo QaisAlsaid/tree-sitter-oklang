@@ -1,5 +1,5 @@
 # tree-sitter-oklang
-[![CI](https://github.com/qais/tree-sitter-oklang/actions/workflows/ci.yml/badge.svg)](https://github.com/qais/tree-sitter-oklang/actions/workflows/ci.yml)
+[![CI](https://github.com/QaisAlsaid/tree-sitter-oklang/actions/workflows/ci.yml/badge.svg)](https://github.com/QaisAlsaid/tree-sitter-oklang/actions/workflows/ci.yml)
 
 [OKLang](https://codeberg.org/qais/oklang) grammar for [tree-sitter](https://github.com/tree-sitter/tree-sitter)
 
