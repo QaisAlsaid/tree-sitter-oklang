@@ -44,7 +44,14 @@
 (class_conversion_operator type: (ident) @type)
 (import_decl alias: (ident) @type)
 
-(let_decl (binding name: (ident) @variable))
+(class_fu_decl name: (ident) @constructor
+  (#match? @constructor "init" "deinit"))
+(binding name: (ident) @variable.builtin
+  (#eq? @variable.builtin "_"))
+
+(let_decl (binding name: (ident) @constant))
+(let_decl (binding "mut" name: (ident) @variable))
+(let_decl "glob" (binding name: (ident) @variable.global))
 (class_let_decl (binding name: (ident) @property))
 (bind_list (binding name: (ident) @variable.parameter))
 (catch_binding (ident) @variable.parameter)
