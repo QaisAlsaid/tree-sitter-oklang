@@ -1,5 +1,5 @@
 # tree-sitter-oklang
-[![CI](https://github.com/<gh-user>/tree-sitter-oklang/actions/workflows/ci.yml/badge.svg)](https://github.com/<gh-user>/tree-sitter-oklang/actions/workflows/ci.yml)
+[![CI](https://github.com/qais/tree-sitter-oklang/actions/workflows/ci.yml/badge.svg)](https://github.com/qais/tree-sitter-oklang/actions/workflows/ci.yml)
 
 [OKLang](https://codeberg.org/qais/oklang) grammar for [tree-sitter](https://github.com/tree-sitter/tree-sitter)
 
@@ -12,7 +12,7 @@ note: some features here are provisional until actually implemented in OKLang.
 
 On NixOS enter the provided dev shell
 ```
-nix nix develop
+nix develop
 tree-sitter generate && tree-sitter test
 tree-sitter highlight examples/factorial.ok
 ```
