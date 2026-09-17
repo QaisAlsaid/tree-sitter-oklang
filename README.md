@@ -5,14 +5,27 @@
 
 ## Status
 
-v0.1.0: supports declarations, statements, expressions, classes, string escapes and `f"{expr}"`  interpolation.
-note: some features here are provisional until actually implemented in OKLang.
+**v0.1.1** supports: 
+ - declarations
+ - statements
+ - expressions
+ - classes
+ - string
+ - escapes
+ - `f"{expr}"`  interpolation.
+
+> [!NOTE]
+> Some features here are provisional until actually implemented in OKLang.
 
 ## Dev
 
-On NixOS enter the provided dev shell
+On NixOS enter the provided development shell
 ```
 nix develop
 tree-sitter generate && tree-sitter test
 tree-sitter highlight examples/factorial.ok
 ```
+
+## License
+
+[MIT License](LICENSE)
