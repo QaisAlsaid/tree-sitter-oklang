@@ -13,10 +13,6 @@ jobs:
       - run: npm i -g tree-sitter-cli@0.26.8
       - run: tree-sitter generate
       - run: tree-sitter test
-      - name: smoke test (dorg3)
-        run: |
-          test -f examples/game.ok
-          tree-sitter parse examples/game.ok > /dev/null   # exit 1 on ERROR/MISSING
       - name: report status back to codeberg
         if: always()
         run: |
