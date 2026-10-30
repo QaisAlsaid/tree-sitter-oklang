@@ -34,7 +34,7 @@
 
 ; punctuation
 ["(" ")" "[" "]" "{" "}"] @punctuation.bracket
-[";" "," "." ":" "?"] @punctuation.delimiter
+[";" "," "." ":"] @punctuation.delimiter
 
 ; names
 (fu_decl name: (ident) @function)
@@ -53,7 +53,7 @@
 (let_decl (binding "mut" name: (ident) @variable))
 (let_decl "glob" (binding name: (ident) @variable.global))
 (class_let_decl (binding name: (ident) @property))
-(bind_list (binding name: (ident) @variable.parameter))
+(bind_list (parameter (binding name: (ident) @variable.parameter)))
 (catch_binding (ident) @variable.parameter)
 
 ; calls and access

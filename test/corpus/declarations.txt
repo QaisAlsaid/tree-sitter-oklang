@@ -50,28 +50,31 @@ async export fu f(mut x, y,) { print x; }
   (fu_decl
     (ident)
     (bind_list
-      (binding
-        (ident))
-      (binding
-        (ident)))
+      (parameter
+        (binding
+          (ident)))
+      (parameter
+        (binding
+          (ident))))
     (compound_stmt
       (print_stmt
         (ident)))))
 
 ==================
-fu: single statement body
+fu: body is compound
 ==================
 
-fu hello() print "hi";
+fu hello() { print "hi"; }
 
 ---
 
 (source_file
   (fu_decl
     (ident)
-    (print_stmt
-      (string_expr
-        (double_quoted_string)))))
+    (compound_stmt
+      (print_stmt
+        (string_expr
+          (double_quoted_string))))))
 
 ==================
 class: all member kinds
@@ -108,8 +111,9 @@ export class Point inherits Base {
     (class_operator_decl
       (class_overridable_operator)
       (bind_list
-        (binding
-          (ident)))
+        (parameter
+          (binding
+            (ident))))
       (compound_stmt
         (return_stmt
           (this_expr))))
@@ -139,3 +143,34 @@ import 'util';
   (import_decl
     (string_expr
       (single_quoted_string))))
+
+==================
+fu: default parameters
+==================
+
+fu f(a, b = 10, mut c = a + 1) { return a + b; }
+
+---
+
+(source_file
+  (fu_decl
+    (ident)
+    (bind_list
+      (parameter
+        (binding
+          (ident)))
+      (parameter
+        (binding
+          (ident))
+        (number_expr))
+      (parameter
+        (binding
+          (ident))
+        (binary_expr
+          (ident)
+          (number_expr))))
+    (compound_stmt
+      (return_stmt
+        (binary_expr
+          (ident)
+          (ident))))))

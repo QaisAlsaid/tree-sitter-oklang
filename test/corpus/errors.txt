@@ -1,5 +1,5 @@
 ==================
-errors: invalid 
+errors: invalid
 ==================
 
 let = 1;
@@ -10,24 +10,25 @@ print;
 
 ---
 
-    (source_file
-      (let_decl
+(source_file
+  (let_decl
+    (binding
+      (MISSING ident))
+    (number_expr))
+  (ERROR
+    (number_expr))
+  (expr_stmt
+    (number_expr))
+  (fu_decl
+    (ident)
+    (bind_list
+      (parameter
         (binding
-          (MISSING ident))
-        (number_expr))
-      (ERROR
-        (number_expr))
-      (expr_stmt
-        (number_expr))
-      (fu_decl
-        (ident)
-        (bind_list
-          (binding
-            (ident)))
-        (ERROR
-          (ident))
-        (compound_stmt))
-      (ERROR))
+          (ident))))
+    (ERROR
+      (ident))
+    (compound_stmt))
+  (ERROR))
 
 ==================
 errors: strings unknown escape
@@ -37,15 +38,15 @@ let bad = "oops\x";
 
 ---
 
-    (source_file
-      (let_decl
-        (binding
-          (ident))
-        (string_expr
-          (double_quoted_string
-            (ERROR
-              (UNEXPECTED 'x')
-              (ident))))))
+(source_file
+  (let_decl
+    (binding
+      (ident))
+    (string_expr
+      (double_quoted_string
+        (ERROR
+          (UNEXPECTED 'x')
+          (ident))))))
 
 ==================
 errors: strings lone brace in f strings
@@ -55,11 +56,11 @@ let bad = f"oops }";
 
 ---
 
-    (source_file
-      (let_decl
-        (binding
-          (ident))
-        (string_expr
-          (interpolated_string
-            (f_double_quoted
-              (ERROR))))))
+(source_file
+  (let_decl
+    (binding
+      (ident))
+    (string_expr
+      (interpolated_string
+        (f_double_quoted
+          (ERROR))))))

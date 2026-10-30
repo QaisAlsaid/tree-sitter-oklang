@@ -18,10 +18,10 @@ const PREC_BITWISE_AND = 7;
 const PREC_EQUALITY = 8;
 const PREC_COMPARISON = 9;
 const PREC_SHIFT = 10;
-const PREC_AS = 11;
-const PREC_SUM = 12;
-const PREC_PRODUCT = 13;
-const PREC_EXPONENT = 14;
+const PREC_SUM = 11;
+const PREC_PRODUCT = 12;
+const PREC_EXPONENT = 13;
+const PREC_AS = 14;
 const PREC_PREFIX = 15;
 const PREC_POSTFIX = 16;
 const PREC_CALL = 17;
@@ -37,10 +37,10 @@ export default grammar({
   ],
   conflicts: $ => [
     [$.let_decl, $.fu_decl, $.class_decl, $.import_decl], // top level decl
-    [$.let_decl, $.fu_decl, $.class_decl], // for init 
+    [$.let_decl, $.fu_decl, $.class_decl], // c-style for init
     [$.class_let_decl, $.class_fu_decl, $.class_operator_decl], // in class (decl mods)
     [$.class_fu_decl, $.class_operator_decl], // in class (declmods for functions except the ones that they share with let)
-    [$.if_stmt], [$.try_stmt],
+    [$.try_stmt],
   ],
 
   word: $ => $.ident,
@@ -84,18 +84,30 @@ export default grammar({
       '(',
       field('parameters', optional($.bind_list)),
       ')',
-      field('body', $._stmt),
+      field('body', $.compound_stmt),
     ),
 
     binding: $ => seq(field('bindmods', optional('mut')), field('name', $.ident)),
 
-    bind_list: $ => field('parameters', seq(
+    // parameters may carry default values. 
+    // deliberately not part of
+    // $.binding: for-in shares binding and must stay unambiguous against
+    // the numeric for's '='.
+    parameter: $ => seq(
       $.binding,
-      repeat(seq(',', $.binding)),
+      optional(seq(
+        '=',
+        field('default', $._expr),
+      )),
+    ),
+
+    bind_list: $ => field('parameters', seq(
+      $.parameter,
+      repeat(seq(',', $.parameter)),
       optional(','),
     )),
 
-    // class (tho not supported in v0.0.2 but it's ok).
+    // class (tho not supported now but it's ok).
 
     class_decl: $ => seq(
       field('declmods', repeat(choice(
@@ -142,7 +154,7 @@ export default grammar({
       '(',
       optional($.bind_list),
       ')',
-      $._stmt,
+      $.compound_stmt,
     ),
 
     class_operator_decl: $ => seq(
@@ -160,7 +172,7 @@ export default grammar({
       '(',
       optional($.bind_list),
       ')',
-      $._stmt,
+      $.compound_stmt,
     ),
 
     class_conversion_operator: $ => field('type', $.ident),
@@ -196,7 +208,9 @@ export default grammar({
     _stmt: $ => choice(
       $.compound_stmt,
       $.if_stmt,
-      $.for_stmt,
+      $.for_in_stmt,
+      $.numeric_for_stmt,
+      $.c_style_for_stmt,
       $.while_stmt,
       $.return_stmt,
       $.break_stmt,
@@ -219,37 +233,62 @@ export default grammar({
       '}',
     )),
 
-    // if
     if_stmt: $ => seq(
       'if',
       field('condition', $._expr),
-      '?',
-      field('consequences', $._stmt),
+      field('consequences', $.compound_stmt),
 
       optional(seq(
         'else',
-        optional('?'),
-        field('alternative', $._stmt),
+        field('alternative', choice($.if_stmt, $.compound_stmt)),
       )),
     ),
 
-    // while 
+    // while
     while_stmt: $ => seq(
       'while',
       field('condition', $._expr),
-      '?',
-      field('body', $._stmt),
+      field('body', $.compound_stmt),
     ),
 
-    // for
-    for_stmt: $ => seq(
+    // for-in: for let v : arr { }
+    for_in_stmt: $ => seq(
+      'for',
+      'let',
+      field('binding', $.binding),
+      ':',
+      field('sequence', $._expr),
+      field('body', $.compound_stmt),
+    ),
+
+    // numeric for: for let i = 0 : 5 { } / for let i = 0 : 9 : step { }
+    numeric_for_stmt: $ => seq(
+      'for',
+      'let',
+      field('binding', $.binding),
+      '=',
+      field('start', $._expr),
+      ':',
+      field('limit', $._expr),
+      optional(seq(
+        ':',
+        field('step', $._expr),
+      )),
+      field('body', $.compound_stmt),
+    ),
+
+    // c-style for: for let mut i = 0; i < 3; i = i + 1 { }
+    c_style_for_stmt: $ => seq(
       'for',
       field('initializer', choice(
         $.let_decl,
         seq(choice($.fu_decl, $.class_decl), ';'),
         ';',
       )),
-      field('condition', optional($._expr)), ';', field('increment', optional($._expr)), '?', $._stmt,
+      field('condition', optional($._expr)),
+      ';',
+      field('increment', optional($._expr)),
+      field('body', $.compound_stmt),
     ),
     // return 
     return_stmt: $ => seq(
@@ -546,7 +585,7 @@ export default grammar({
       '(',
       optional($.bind_list),
       ')',
-      field('body', $._stmt),
+      field('body', $.compound_stmt),
     )),
 
     // array

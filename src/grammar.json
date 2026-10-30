@@ -162,7 +162,7 @@
           "name": "body",
           "content": {
             "type": "SYMBOL",
-            "name": "_stmt"
+            "name": "compound_stmt"
           }
         }
       ]
@@ -196,6 +196,40 @@
         }
       ]
     },
+    "parameter": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "binding"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "="
+                },
+                {
+                  "type": "FIELD",
+                  "name": "default",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_expr"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
     "bind_list": {
       "type": "FIELD",
       "name": "parameters",
@@ -204,7 +238,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "binding"
+            "name": "parameter"
           },
           {
             "type": "REPEAT",
@@ -217,7 +251,7 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "binding"
+                  "name": "parameter"
                 }
               ]
             }
@@ -446,7 +480,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_stmt"
+          "name": "compound_stmt"
         }
       ]
     },
@@ -516,7 +550,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_stmt"
+          "name": "compound_stmt"
         }
       ]
     },
@@ -744,7 +778,15 @@
         },
         {
           "type": "SYMBOL",
-          "name": "for_stmt"
+          "name": "for_in_stmt"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "numeric_for_stmt"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "c_style_for_stmt"
         },
         {
           "type": "SYMBOL",
@@ -837,15 +879,11 @@
           }
         },
         {
-          "type": "STRING",
-          "value": "?"
-        },
-        {
           "type": "FIELD",
           "name": "consequences",
           "content": {
             "type": "SYMBOL",
-            "name": "_stmt"
+            "name": "compound_stmt"
           }
         },
         {
@@ -859,23 +897,20 @@
                   "value": "else"
                 },
                 {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "STRING",
-                      "value": "?"
-                    },
-                    {
-                      "type": "BLANK"
-                    }
-                  ]
-                },
-                {
                   "type": "FIELD",
                   "name": "alternative",
                   "content": {
-                    "type": "SYMBOL",
-                    "name": "_stmt"
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "if_stmt"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "compound_stmt"
+                      }
+                    ]
                   }
                 }
               ]
@@ -903,20 +938,135 @@
           }
         },
         {
+          "type": "FIELD",
+          "name": "body",
+          "content": {
+            "type": "SYMBOL",
+            "name": "compound_stmt"
+          }
+        }
+      ]
+    },
+    "for_in_stmt": {
+      "type": "SEQ",
+      "members": [
+        {
           "type": "STRING",
-          "value": "?"
+          "value": "for"
+        },
+        {
+          "type": "STRING",
+          "value": "let"
+        },
+        {
+          "type": "FIELD",
+          "name": "binding",
+          "content": {
+            "type": "SYMBOL",
+            "name": "binding"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": ":"
+        },
+        {
+          "type": "FIELD",
+          "name": "sequence",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_expr"
+          }
         },
         {
           "type": "FIELD",
           "name": "body",
           "content": {
             "type": "SYMBOL",
-            "name": "_stmt"
+            "name": "compound_stmt"
           }
         }
       ]
     },
-    "for_stmt": {
+    "numeric_for_stmt": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "for"
+        },
+        {
+          "type": "STRING",
+          "value": "let"
+        },
+        {
+          "type": "FIELD",
+          "name": "binding",
+          "content": {
+            "type": "SYMBOL",
+            "name": "binding"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "="
+        },
+        {
+          "type": "FIELD",
+          "name": "start",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_expr"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": ":"
+        },
+        {
+          "type": "FIELD",
+          "name": "limit",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_expr"
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": ":"
+                },
+                {
+                  "type": "FIELD",
+                  "name": "step",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_expr"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "FIELD",
+          "name": "body",
+          "content": {
+            "type": "SYMBOL",
+            "name": "compound_stmt"
+          }
+        }
+      ]
+    },
+    "c_style_for_stmt": {
       "type": "SEQ",
       "members": [
         {
@@ -999,12 +1149,12 @@
           }
         },
         {
-          "type": "STRING",
-          "value": "?"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_stmt"
+          "type": "FIELD",
+          "name": "body",
+          "content": {
+            "type": "SYMBOL",
+            "name": "compound_stmt"
+          }
         }
       ]
     },
@@ -1692,7 +1842,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 12,
+          "value": 11,
           "content": {
             "type": "SEQ",
             "members": [
@@ -1730,7 +1880,7 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": 13,
+          "value": 12,
           "content": {
             "type": "SEQ",
             "members": [
@@ -1774,7 +1924,7 @@
     },
     "as_expr": {
       "type": "PREC_LEFT",
-      "value": 11,
+      "value": 14,
       "content": {
         "type": "SEQ",
         "members": [
@@ -2107,7 +2257,7 @@
           "name": "body",
           "content": {
             "type": "SYMBOL",
-            "name": "_stmt"
+            "name": "compound_stmt"
           }
         }
       ]
@@ -2623,9 +2773,6 @@
     [
       "class_fu_decl",
       "class_operator_decl"
-    ],
-    [
-      "if_stmt"
     ],
     [
       "try_stmt"

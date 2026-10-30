@@ -2,23 +2,25 @@
 if: else
 ==================
 
-if a ? print 1; else print 2;
+if a { print 1; } else { print 2; }
 
 ---
 
 (source_file
   (if_stmt
     (ident)
-    (print_stmt
-      (number_expr))
-    (print_stmt
-      (number_expr))))
+    (compound_stmt
+      (print_stmt
+        (number_expr)))
+    (compound_stmt
+      (print_stmt
+        (number_expr)))))
 
 ==================
-if: else with ?
+if: brace bodies only
 ==================
 
-if a ? {} else ? {}
+if a {} else {}
 
 ---
 
@@ -32,7 +34,7 @@ if a ? {} else ? {}
 if: else-if chain
 ==================
 
-if a ? {} else if b ? {} else {};
+if a {} else if b {} else {};
 
 ---
 
@@ -50,7 +52,7 @@ if a ? {} else if b ? {} else {};
 while
 ==================
 
-while a ? {}
+while a {}
 
 ---
 
@@ -60,77 +62,101 @@ while a ? {}
     (compound_stmt)))
 
 ==================
-for: empty
+for-in: basic
 ==================
 
-for ; ; ? {}
+for let v : arr { print v; }
 
 ---
 
 (source_file
-  (for_stmt
-    (compound_stmt)))
-
-==================
-for: let init
-==================
-
-for let i = 0; i < 10; i = i + 1? { print i; }
-
----
-
-(source_file
-  (for_stmt
-    (let_decl
-      (binding
-        (ident))
-      (number_expr))
-    (binary_expr
-      (ident)
-      (number_expr))
-    (assignment_expr
-      (lvalue_expr
-        (ident))
-      (binary_expr
-        (ident)
-        (number_expr)))
+  (for_in_stmt
+    (binding
+      (ident))
+    (ident)
     (compound_stmt
       (print_stmt
         (ident)))))
 
 ==================
-for: fu init
+for-in: mut binding
 ==================
 
-for fu x(_) { print _; }; i < 10; i = i + 1? { x(i); }
+for let mut v : arr { v = v * 2; }
 
 ---
 
 (source_file
-  (for_stmt
-    (fu_decl
-      (ident)
-      (bind_list
-        (binding
-          (ident)))
-      (compound_stmt
-        (print_stmt
-          (ident))))
-    (binary_expr
-      (ident)
-      (number_expr))
-    (assignment_expr
-      (lvalue_expr
-        (ident))
-      (binary_expr
-        (ident)
-        (number_expr)))
+  (for_in_stmt
+    (binding
+      (ident))
+    (ident)
     (compound_stmt
       (expr_stmt
-        (call_expr
-          (ident)
-          (expr_list
-            (ident)))))))
+        (assignment_expr
+          (lvalue_expr
+            (ident))
+          (binary_expr
+            (ident)
+            (number_expr)))))))
+
+==================
+numeric for: basic
+==================
+
+for let i = 0 : 10 { print i; }
+
+---
+
+(source_file
+  (numeric_for_stmt
+    (binding
+      (ident))
+    (number_expr)
+    (number_expr)
+    (compound_stmt
+      (print_stmt
+        (ident)))))
+
+==================
+numeric for: step
+==================
+
+for let i = 0 : 10 : 2 { print i; }
+
+---
+
+(source_file
+  (numeric_for_stmt
+    (binding
+      (ident))
+    (number_expr)
+    (number_expr)
+    (number_expr)
+    (compound_stmt
+      (print_stmt
+        (ident)))))
+
+==================
+numeric for: mut counter
+==================
+
+for let mut i = 0 : 5 { i = 10; }
+
+---
+
+(source_file
+  (numeric_for_stmt
+    (binding
+      (ident))
+    (number_expr)
+    (number_expr)
+    (compound_stmt
+      (expr_stmt
+        (assignment_expr
+          (lvalue_expr
+            (ident))
+          (number_expr))))))
 
 ==================
 try: binding + finalize
@@ -274,3 +300,77 @@ let /* hi */ x = 1; // trailing
       (ident))
     (number_expr))
   (line_comment))
+
+==================
+c-style for: let init
+==================
+
+for let mut i = 0; i < 3; i = i + 1 { print i; }
+
+---
+
+(source_file
+  (c_style_for_stmt
+    (let_decl
+      (binding
+        (ident))
+      (number_expr))
+    (binary_expr
+      (ident)
+      (number_expr))
+    (assignment_expr
+      (lvalue_expr
+        (ident))
+      (binary_expr
+        (ident)
+        (number_expr)))
+    (compound_stmt
+      (print_stmt
+        (ident)))))
+
+==================
+c-style for: empty sections
+==================
+
+for ; ; { }
+
+---
+
+(source_file
+  (c_style_for_stmt
+    (compound_stmt)))
+
+==================
+c-style for: fu init
+==================
+
+for fu x(_) { print _; }; i < 10; i = i + 1 { x(i); }
+
+---
+
+(source_file
+  (c_style_for_stmt
+    (fu_decl
+      (ident)
+      (bind_list
+        (parameter
+          (binding
+            (ident))))
+      (compound_stmt
+        (print_stmt
+          (ident))))
+    (binary_expr
+      (ident)
+      (number_expr))
+    (assignment_expr
+      (lvalue_expr
+        (ident))
+      (binary_expr
+        (ident)
+        (number_expr)))
+    (compound_stmt
+      (expr_stmt
+        (call_expr
+          (ident)
+          (expr_list
+            (ident)))))))

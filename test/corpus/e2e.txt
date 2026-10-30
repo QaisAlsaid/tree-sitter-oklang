@@ -316,7 +316,7 @@ print(6 / 3); // expect: 2
 e2e: if_false
 ==================
 
-if false? print "damn!";
+if false { print "damn!"; }
 print "phew"; // expect: phew
 
 ---
@@ -324,9 +324,10 @@ print "phew"; // expect: phew
 (source_file
   (if_stmt
     (false_expr)
-    (print_stmt
-      (string_expr
-        (double_quoted_string))))
+    (compound_stmt
+      (print_stmt
+        (string_expr
+          (double_quoted_string)))))
   (print_stmt
     (string_expr
       (double_quoted_string)))
@@ -336,83 +337,92 @@ print "phew"; // expect: phew
 e2e: nested_if
 ==================
 
-if true? if true? print "opposingfork"; // expect: opposingfork
+if true { if true { print "opposingfork"; } } // expect: opposingfork
 
 ---
 
 (source_file
   (if_stmt
     (true_expr)
-    (if_stmt
-      (true_expr)
-      (print_stmt
-        (string_expr
-          (double_quoted_string)))))
+    (compound_stmt
+      (if_stmt
+        (true_expr)
+        (compound_stmt
+          (print_stmt
+            (string_expr
+              (double_quoted_string)))))))
   (line_comment))
 
 ==================
 e2e: if_true
 ==================
 
-if true? print("yes"); // expect: yes
+if true { print("yes"); } // expect: yes
 
 ---
 
 (source_file
   (if_stmt
     (true_expr)
-    (print_stmt
-      (grouping_expr
-        (string_expr
-          (double_quoted_string)))))
+    (compound_stmt
+      (print_stmt
+        (grouping_expr
+          (string_expr
+            (double_quoted_string))))))
   (line_comment))
 
 ==================
 e2e: if_else
 ==================
 
-if false? print "yes"; else? print "no"; // expect: no
+if false { print "yes"; } else { print "no"; } // expect: no
 
 ---
 
 (source_file
   (if_stmt
     (false_expr)
-    (print_stmt
-      (string_expr
-        (double_quoted_string)))
-    (print_stmt
-      (string_expr
-        (double_quoted_string))))
+    (compound_stmt
+      (print_stmt
+        (string_expr
+          (double_quoted_string))))
+    (compound_stmt
+      (print_stmt
+        (string_expr
+          (double_quoted_string)))))
   (line_comment))
 
 ==================
 e2e: branching
 ==================
 
-if true? print "opposing"; else print "fork"; // expect: opposing
-if false? print "opposing"; else? print "fork"; // expect: fork
+if true { print "opposing"; } else { print "fork"; } // expect: opposing
+if false { print "opposing"; } else { print "fork"; } // expect: fork
 
 ---
 
 (source_file
   (if_stmt
     (true_expr)
-    (print_stmt
-      (string_expr
-        (double_quoted_string)))
-    (print_stmt
-      (string_expr
-        (double_quoted_string))))
+    (compound_stmt
+      (print_stmt
+        (string_expr
+          (double_quoted_string))))
+    (compound_stmt
+      (print_stmt
+        (string_expr
+          (double_quoted_string)))))
   (line_comment)
   (if_stmt
     (false_expr)
-    (print_stmt
-      (string_expr
-        (double_quoted_string)))
-    (print_stmt
-      (string_expr
-        (double_quoted_string))))
+    (compound_stmt
+      (print_stmt
+        (string_expr
+          (double_quoted_string))))
+    (compound_stmt
+      (print_stmt
+        (string_expr
+          (double_quoted_string)))))
   (line_comment))
 
 ==================
@@ -420,12 +430,12 @@ e2e: expression_in_if
 ==================
 
 let qais = "cool";
-if qais == "cool"? {
+if qais == "cool" {
   print "qais is cool!"; // expect: qais is cool!
-} else print "qais is a bum!"; // better be working!
+} else { print "qais is a bum!"; } // better be working!
 
-if 22 == 22? print 'yeh'; // expect: yeh
-if 67 < 69? print 'also by age'; // expect: also by age
+if 22 == 22 { print 'yeh'; } // expect: yeh
+if 67 < 69 { print 'also by age'; } // expect: also by age
 
 ---
 
@@ -445,58 +455,64 @@ if 67 < 69? print 'also by age'; // expect: also by age
         (string_expr
           (double_quoted_string)))
       (line_comment))
-    (print_stmt
-      (string_expr
-        (double_quoted_string))))
+    (compound_stmt
+      (print_stmt
+        (string_expr
+          (double_quoted_string)))))
   (line_comment)
   (if_stmt
     (binary_expr
       (number_expr)
       (number_expr))
-    (print_stmt
-      (string_expr
-        (single_quoted_string))))
+    (compound_stmt
+      (print_stmt
+        (string_expr
+          (single_quoted_string)))))
   (line_comment)
   (if_stmt
     (binary_expr
       (number_expr)
       (number_expr))
-    (print_stmt
-      (string_expr
-        (single_quoted_string))))
+    (compound_stmt
+      (print_stmt
+        (string_expr
+          (single_quoted_string)))))
   (line_comment))
 
 ==================
 e2e: if_else_if
 ==================
 
-if false? print 67; else if false? print "no"; else print "yeh!"; // expect: yeh!
+if false { print 67; } else if false { print "no"; } else { print "yeh!"; } // expect: yeh!
 
 ---
 
 (source_file
   (if_stmt
     (false_expr)
-    (print_stmt
-      (number_expr))
+    (compound_stmt
+      (print_stmt
+        (number_expr)))
     (if_stmt
       (false_expr)
-      (print_stmt
-        (string_expr
-          (double_quoted_string)))
-      (print_stmt
-        (string_expr
-          (double_quoted_string)))))
+      (compound_stmt
+        (print_stmt
+          (string_expr
+            (double_quoted_string))))
+      (compound_stmt
+        (print_stmt
+          (string_expr
+            (double_quoted_string))))))
   (line_comment))
 
 ==================
 e2e: nested_break
 ==================
 
-for let mut i = 0; i < 2; i = i + 1? {
+for let mut i = 0 : 2 {
     print("outer");
 
-    for let mut j = 0; j < 2; j = j + 1? {
+    for let mut j = 0 : 2 {
         print("inner");
         break;
     }
@@ -514,39 +530,21 @@ for let mut i = 0; i < 2; i = i + 1? {
 ---
 
 (source_file
-  (for_stmt
-    (let_decl
-      (binding
-        (ident))
-      (number_expr))
-    (binary_expr
-      (ident)
-      (number_expr))
-    (assignment_expr
-      (lvalue_expr
-        (ident))
-      (binary_expr
-        (ident)
-        (number_expr)))
+  (numeric_for_stmt
+    (binding
+      (ident))
+    (number_expr)
+    (number_expr)
     (compound_stmt
       (print_stmt
         (grouping_expr
           (string_expr
             (double_quoted_string))))
-      (for_stmt
-        (let_decl
-          (binding
-            (ident))
-          (number_expr))
-        (binary_expr
-          (ident)
-          (number_expr))
-        (assignment_expr
-          (lvalue_expr
-            (ident))
-          (binary_expr
-            (ident)
-            (number_expr)))
+      (numeric_for_stmt
+        (binding
+          (ident))
+        (number_expr)
+        (number_expr)
         (compound_stmt
           (print_stmt
             (grouping_expr
@@ -568,8 +566,8 @@ for let mut i = 0; i < 2; i = i + 1? {
 e2e: break
 ==================
 
-for let mut i = 0; i < 10; i = i + 1? {
-    if i == 2 ? break;
+for let mut i = 0 : 10 {
+    if i == 2 { break; }
     print(i);
 }
 
@@ -583,26 +581,18 @@ print("done");
 ---
 
 (source_file
-  (for_stmt
-    (let_decl
-      (binding
-        (ident))
-      (number_expr))
-    (binary_expr
-      (ident)
-      (number_expr))
-    (assignment_expr
-      (lvalue_expr
-        (ident))
-      (binary_expr
-        (ident)
-        (number_expr)))
+  (numeric_for_stmt
+    (binding
+      (ident))
+    (number_expr)
+    (number_expr)
     (compound_stmt
       (if_stmt
         (binary_expr
           (ident)
           (number_expr))
-        (break_stmt))
+        (compound_stmt
+          (break_stmt)))
       (print_stmt
         (grouping_expr
           (ident)))))
@@ -618,7 +608,7 @@ print("done");
 e2e: basic
 ==================
 
-for let mut i = 0; i < 3; i = i + 1? {
+for let mut i = 0 : 3 {
   print i;
 }
 // expect: 0
@@ -628,20 +618,11 @@ for let mut i = 0; i < 3; i = i + 1? {
 ---
 
 (source_file
-  (for_stmt
-    (let_decl
-      (binding
-        (ident))
-      (number_expr))
-    (binary_expr
-      (ident)
-      (number_expr))
-    (assignment_expr
-      (lvalue_expr
-        (ident))
-      (binary_expr
-        (ident)
-        (number_expr)))
+  (numeric_for_stmt
+    (binding
+      (ident))
+    (number_expr)
+    (number_expr)
     (compound_stmt
       (print_stmt
         (ident))))
@@ -653,8 +634,8 @@ for let mut i = 0; i < 3; i = i + 1? {
 e2e: nested
 ==================
 
-for let mut i = 0; i < 2; i = i + 1? {
-    for let mut j = 0; j < 3; j = j + 1? {
+for let mut i = 0 : 2 {
+    for let mut j = 0 : 3 {
         print(i);
         print(j);
     }
@@ -676,35 +657,17 @@ for let mut i = 0; i < 2; i = i + 1? {
 ---
 
 (source_file
-  (for_stmt
-    (let_decl
-      (binding
-        (ident))
-      (number_expr))
-    (binary_expr
-      (ident)
-      (number_expr))
-    (assignment_expr
-      (lvalue_expr
-        (ident))
-      (binary_expr
-        (ident)
-        (number_expr)))
+  (numeric_for_stmt
+    (binding
+      (ident))
+    (number_expr)
+    (number_expr)
     (compound_stmt
-      (for_stmt
-        (let_decl
-          (binding
-            (ident))
-          (number_expr))
-        (binary_expr
-          (ident)
-          (number_expr))
-        (assignment_expr
-          (lvalue_expr
-            (ident))
-          (binary_expr
-            (ident)
-            (number_expr)))
+      (numeric_for_stmt
+        (binding
+          (ident))
+        (number_expr)
+        (number_expr)
         (compound_stmt
           (print_stmt
             (grouping_expr
@@ -729,7 +692,7 @@ for let mut i = 0; i < 2; i = i + 1? {
 e2e: one_iter
 ==================
 
-for let mut x = 0; x < 1; x = x + 1? {
+for let mut x = 0 : 1 {
   print x;
 }
 // expect: 0
@@ -737,20 +700,11 @@ for let mut x = 0; x < 1; x = x + 1? {
 ---
 
 (source_file
-  (for_stmt
-    (let_decl
-      (binding
-        (ident))
-      (number_expr))
-    (binary_expr
-      (ident)
-      (number_expr))
-    (assignment_expr
-      (lvalue_expr
-        (ident))
-      (binary_expr
-        (ident)
-        (number_expr)))
+  (numeric_for_stmt
+    (binding
+      (ident))
+    (number_expr)
+    (number_expr)
     (compound_stmt
       (print_stmt
         (ident))))
@@ -761,7 +715,7 @@ e2e: mutable
 ==================
 
 let mut x = 0;
-for let mut i = 0; i < 3; i = i + 1? {
+for let mut i = 0 : 3 {
     x = x + 1;
     print(x);
 }
@@ -776,20 +730,11 @@ for let mut i = 0; i < 3; i = i + 1? {
     (binding
       (ident))
     (number_expr))
-  (for_stmt
-    (let_decl
-      (binding
-        (ident))
-      (number_expr))
-    (binary_expr
-      (ident)
-      (number_expr))
-    (assignment_expr
-      (lvalue_expr
-        (ident))
-      (binary_expr
-        (ident)
-        (number_expr)))
+  (numeric_for_stmt
+    (binding
+      (ident))
+    (number_expr)
+    (number_expr)
     (compound_stmt
       (expr_stmt
         (assignment_expr
@@ -809,14 +754,14 @@ for let mut i = 0; i < 3; i = i + 1? {
 e2e: nested_continue
 ==================
 
-for let mut i = 0; i < 2; i = i + 1? {
+for let mut i = 0 : 2 {
     print("outer");
     print(i);
 
-    for let mut j = 0; j < 3; j = j + 1? {
-        if j == 1 ? continue;
+    for let mut j = 0 : 3 {
+        if j == 1 { continue; }
         print("inner");
-	print(j);
+        print(j);
     }
 }
 
@@ -836,20 +781,11 @@ for let mut i = 0; i < 2; i = i + 1? {
 ---
 
 (source_file
-  (for_stmt
-    (let_decl
-      (binding
-        (ident))
-      (number_expr))
-    (binary_expr
-      (ident)
-      (number_expr))
-    (assignment_expr
-      (lvalue_expr
-        (ident))
-      (binary_expr
-        (ident)
-        (number_expr)))
+  (numeric_for_stmt
+    (binding
+      (ident))
+    (number_expr)
+    (number_expr)
     (compound_stmt
       (print_stmt
         (grouping_expr
@@ -858,26 +794,18 @@ for let mut i = 0; i < 2; i = i + 1? {
       (print_stmt
         (grouping_expr
           (ident)))
-      (for_stmt
-        (let_decl
-          (binding
-            (ident))
-          (number_expr))
-        (binary_expr
-          (ident)
-          (number_expr))
-        (assignment_expr
-          (lvalue_expr
-            (ident))
-          (binary_expr
-            (ident)
-            (number_expr)))
+      (numeric_for_stmt
+        (binding
+          (ident))
+        (number_expr)
+        (number_expr)
         (compound_stmt
           (if_stmt
             (binary_expr
               (ident)
               (number_expr))
-            (continue_stmt))
+            (compound_stmt
+              (continue_stmt)))
           (print_stmt
             (grouping_expr
               (string_expr
@@ -902,9 +830,9 @@ for let mut i = 0; i < 2; i = i + 1? {
 e2e: continue
 ==================
 
-for let mut i = 0; i < 5; i = i + 1? {
-    if i == 1 ? continue;
-    if i == 3 ? continue;
+for let mut i = 0 : 5 {
+    if i == 1 { continue; }
+    if i == 3 { continue; }
 
     print(i);
 }
@@ -919,31 +847,24 @@ print("done");
 ---
 
 (source_file
-  (for_stmt
-    (let_decl
-      (binding
-        (ident))
-      (number_expr))
-    (binary_expr
-      (ident)
-      (number_expr))
-    (assignment_expr
-      (lvalue_expr
-        (ident))
-      (binary_expr
-        (ident)
-        (number_expr)))
+  (numeric_for_stmt
+    (binding
+      (ident))
+    (number_expr)
+    (number_expr)
     (compound_stmt
       (if_stmt
         (binary_expr
           (ident)
           (number_expr))
-        (continue_stmt))
+        (compound_stmt
+          (continue_stmt)))
       (if_stmt
         (binary_expr
           (ident)
           (number_expr))
-        (continue_stmt))
+        (compound_stmt
+          (continue_stmt)))
       (print_stmt
         (grouping_expr
           (ident)))))
@@ -960,24 +881,22 @@ print("done");
 e2e: zero_iter
 ==================
 
-for let i = 0; i > 0; ? print(i);
+for let i = 0 : 0 { print(i); }
 
 print "nothing"; // expect: nothing
 
 ---
 
 (source_file
-  (for_stmt
-    (let_decl
-      (binding
-        (ident))
-      (number_expr))
-    (binary_expr
-      (ident)
-      (number_expr))
-    (print_stmt
-      (grouping_expr
-        (ident))))
+  (numeric_for_stmt
+    (binding
+      (ident))
+    (number_expr)
+    (number_expr)
+    (compound_stmt
+      (print_stmt
+        (grouping_expr
+          (ident)))))
   (print_stmt
     (string_expr
       (double_quoted_string)))
@@ -989,12 +908,12 @@ e2e: nested_break
 
 let mut i = 0;
 
-while i < 2? {
+while i < 2 {
     print("outer");
 
     let mut j = 0;
 
-    while j < 2? {
+    while j < 2 {
         print("inner");
         break;
     }
@@ -1064,8 +983,8 @@ e2e: break
 
 let mut i = 0;
 
-while i < 10? {
-    if i == 2 ? break;
+while i < 10 {
+    if i == 2 { break; }
 
     print(i);
     i = i + 1;
@@ -1093,7 +1012,8 @@ print("done");
         (binary_expr
           (ident)
           (number_expr))
-        (break_stmt))
+        (compound_stmt
+          (break_stmt)))
       (print_stmt
         (grouping_expr
           (ident)))
@@ -1117,7 +1037,7 @@ e2e: basic
 ==================
 
 let mut i = 0;
-while i < 3? {
+while i < 3 {
   print i;
   i = i + 1;
 }
@@ -1157,10 +1077,10 @@ e2e: nested
 
 let mut i = 0;
 
-while i < 2? {
+while i < 2 {
     let mut j = 0;
 
-    while j < 3? {
+    while j < 3 {
         print(i);
         j = j + 1;
     }
@@ -1225,7 +1145,7 @@ e2e: one_iter
 ==================
 
 let mut i = 0;
-while i < 1? {
+while i < 1 {
   print i;
   i = i + 1;
 }
@@ -1260,7 +1180,7 @@ e2e: mutable
 
 let mut i = 0;
 
-while i < 3? {
+while i < 3 {
     i = i + 1;
     print(i);
 }
@@ -1301,13 +1221,13 @@ e2e: continue
 
 let mut i = 0;
 
-while i < 5? {
-    if i == 1? {
+while i < 5 {
+    if i == 1 {
         i = i + 1;
         continue;
     }
 
-    if i == 3? {
+    if i == 3 {
         i = i + 1;
         continue;
     }
@@ -1385,7 +1305,7 @@ e2e: zero_iter
 ==================
 
 let mut i = 0;
-while i < 0 ? print(i);
+while i < 0 { print(i); }
 
 print "nothing"; // expect: nothing
 
@@ -1400,9 +1320,10 @@ print "nothing"; // expect: nothing
     (binary_expr
       (ident)
       (number_expr))
-    (print_stmt
-      (grouping_expr
-        (ident))))
+    (compound_stmt
+      (print_stmt
+        (grouping_expr
+          (ident)))))
   (print_stmt
     (string_expr
       (double_quoted_string)))
@@ -1702,7 +1623,7 @@ e2e: recursion
 ==================
 
 fu factorial(n) {
-    if n <= 1 ? {
+    if n <= 1  {
         return 1;
     }
 
@@ -1717,8 +1638,9 @@ print(factorial(5)); // expect: 120
   (fu_decl
     (ident)
     (bind_list
-      (binding
-        (ident)))
+      (parameter
+        (binding
+          (ident))))
     (compound_stmt
       (if_stmt
         (binary_expr
@@ -1760,16 +1682,21 @@ print(sum(1, 2, 3, 4, 5)); // expect: 15
   (fu_decl
     (ident)
     (bind_list
-      (binding
-        (ident))
-      (binding
-        (ident))
-      (binding
-        (ident))
-      (binding
-        (ident))
-      (binding
-        (ident)))
+      (parameter
+        (binding
+          (ident)))
+      (parameter
+        (binding
+          (ident)))
+      (parameter
+        (binding
+          (ident)))
+      (parameter
+        (binding
+          (ident)))
+      (parameter
+        (binding
+          (ident))))
     (compound_stmt
       (return_stmt
         (binary_expr
@@ -1809,10 +1736,12 @@ print(add(add(1, 2), 3)); // expect: 6
   (fu_decl
     (ident)
     (bind_list
-      (binding
-        (ident))
-      (binding
-        (ident)))
+      (parameter
+        (binding
+          (ident)))
+      (parameter
+        (binding
+          (ident))))
     (compound_stmt
       (return_stmt
         (binary_expr
@@ -1847,10 +1776,12 @@ print(mul(22, 2)); // expect: 44
   (fu_decl
     (ident)
     (bind_list
-      (binding
-        (ident))
-      (binding
-        (ident)))
+      (parameter
+        (binding
+          (ident)))
+      (parameter
+        (binding
+          (ident))))
     (compound_stmt
       (return_stmt
         (binary_expr
@@ -1938,10 +1869,12 @@ print(add(2, 3)); // expect: 5
       (ident))
     (lambda_expr
       (bind_list
-        (binding
-          (ident))
-        (binding
-          (ident)))
+        (parameter
+          (binding
+            (ident)))
+        (parameter
+          (binding
+            (ident))))
       (compound_stmt
         (return_stmt
           (binary_expr
@@ -2001,8 +1934,9 @@ print func(44); // expect: 22
       (ident))
     (lambda_expr
       (bind_list
-        (binding
-          (ident)))
+        (parameter
+          (binding
+            (ident))))
       (compound_stmt
         (expr_stmt
           (assignment_expr
@@ -2141,8 +2075,9 @@ print fork("half"); // expect: life
   (fu_decl
     (ident)
     (bind_list
-      (binding
-        (ident)))
+      (parameter
+        (binding
+          (ident))))
     (compound_stmt
       (return_stmt
         (assignment_expr
@@ -2176,10 +2111,12 @@ print result; // expect: 42
   (fu_decl
     (ident)
     (bind_list
-      (binding
-        (ident))
-      (binding
-        (ident)))
+      (parameter
+        (binding
+          (ident)))
+      (parameter
+        (binding
+          (ident))))
     (compound_stmt
       (return_stmt
         (binary_expr
@@ -2402,12 +2339,12 @@ e2e: local_slot_reuse
 ==================
 
 fu make(side) {
-  if side == 1? {
+  if side == 1 {
     let x = 10;
     return fu() { return x; };
   }
 
-  if side == 2? {
+  if side == 2 {
     let x = 20;
     return fu() { return x; };
   }
@@ -2426,8 +2363,9 @@ print make(3)(); // expect: 30
   (fu_decl
     (ident)
     (bind_list
-      (binding
-        (ident)))
+      (parameter
+        (binding
+          (ident))))
     (compound_stmt
       (if_stmt
         (binary_expr
@@ -2607,8 +2545,9 @@ print(c()); // expect: 2
   (fu_decl
     (ident)
     (bind_list
-      (binding
-        (ident)))
+      (parameter
+        (binding
+          (ident))))
     (compound_stmt
       (fu_decl
         (ident)
@@ -2750,11 +2689,11 @@ e2e: loop_with_if_chain
 
 let mut i = 1;
 
-while i <= 4? {
-    if i == 1 ? print("one");
-    else if i == 2 ? print("two");
-    else if i == 3 ? print("three");
-    else? print("other");
+while i <= 4 {
+    if i == 1 { print("one"); }
+    else if i == 2 { print("two"); }
+    else if i == 3 { print("three"); }
+    else { print("other"); }
 
     i = i + 1;
 }
@@ -2780,30 +2719,34 @@ while i <= 4? {
         (binary_expr
           (ident)
           (number_expr))
-        (print_stmt
-          (grouping_expr
-            (string_expr
-              (double_quoted_string))))
+        (compound_stmt
+          (print_stmt
+            (grouping_expr
+              (string_expr
+                (double_quoted_string)))))
         (if_stmt
           (binary_expr
             (ident)
             (number_expr))
-          (print_stmt
-            (grouping_expr
-              (string_expr
-                (double_quoted_string))))
+          (compound_stmt
+            (print_stmt
+              (grouping_expr
+                (string_expr
+                  (double_quoted_string)))))
           (if_stmt
             (binary_expr
               (ident)
               (number_expr))
-            (print_stmt
-              (grouping_expr
-                (string_expr
-                  (double_quoted_string))))
-            (print_stmt
-              (grouping_expr
-                (string_expr
-                  (double_quoted_string)))))))
+            (compound_stmt
+              (print_stmt
+                (grouping_expr
+                  (string_expr
+                    (double_quoted_string)))))
+            (compound_stmt
+              (print_stmt
+                (grouping_expr
+                  (string_expr
+                    (double_quoted_string))))))))
       (expr_stmt
         (assignment_expr
           (lvalue_expr
@@ -2833,7 +2776,7 @@ let counter = make_counter();
 
 let mut i = 0;
 
-while i < 3? {
+while i < 3 {
     print(counter());
     i = i + 1;
 }
@@ -2901,7 +2844,7 @@ fu make() {
     let x = 44;
 
     return fu(flag) {
-        if flag ? {
+        if flag  {
             return x;
         }
 
@@ -2926,8 +2869,9 @@ print(f(true)); // expect: 44
       (return_stmt
         (lambda_expr
           (bind_list
-            (binding
-              (ident)))
+            (parameter
+              (binding
+                (ident))))
           (compound_stmt
             (if_stmt
               (ident)
@@ -3025,8 +2969,9 @@ print(calculate(10)); // expect: 20
   (fu_decl
     (ident)
     (bind_list
-      (binding
-        (ident)))
+      (parameter
+        (binding
+          (ident))))
     (compound_stmt
       (return_stmt
         (binary_expr
@@ -3035,8 +2980,9 @@ print(calculate(10)); // expect: 20
   (fu_decl
     (ident)
     (bind_list
-      (binding
-        (ident)))
+      (parameter
+        (binding
+          (ident))))
     (compound_stmt
       (return_stmt
         (call_expr
@@ -3057,13 +3003,13 @@ e2e: nested_control_flow
 
 let mut i = 0;
 
-while i < 5? {
-    if i == 1? {
+while i < 5 {
+    if i == 1 {
         i = i + 1;
         continue;
     }
 
-    if i == 3? {
+    if i == 3 {
         i = i + 1;
         continue;
     }
@@ -3138,7 +3084,7 @@ fu double(x) {
 
 let mut i = 0;
 
-while i < 3? {
+while i < 3 {
     print(double(i));
     i = i + 1;
 }
@@ -3153,8 +3099,9 @@ while i < 3? {
   (fu_decl
     (ident)
     (bind_list
-      (binding
-        (ident)))
+      (parameter
+        (binding
+          (ident))))
     (compound_stmt
       (return_stmt
         (binary_expr
@@ -3192,10 +3139,10 @@ e2e: nested_loops
 
 let mut i = 0;
 
-while i < 3? {
+while i < 3 {
     let mut j = 0;
 
-    while j < 2? {
+    while j < 2 {
         print(i * 2 + j);
         j = j + 1;
     }
@@ -3263,11 +3210,11 @@ while i < 3? {
 e2e: many_nests
 ==================
 
-if true ? {
-    if true ? {
-        if true ? {
-            if true ? {
-                if true ? {
+if true  {
+    if true  {
+        if true  {
+            if true  {
+                if true  {
                     print("deep"); // expect: deep
                 }
             }
@@ -3311,7 +3258,7 @@ fu make() {
     return fu(x) {
         total = total + x;
 
-        if total > 10 ? {
+        if total > 10  {
             return total;
         }
 
@@ -3323,7 +3270,7 @@ let f = make();
 
 let mut i = 0;
 
-while i < 4? {
+while i < 4 {
     print(f(i));
     i = i + 1;
 }
@@ -3350,8 +3297,9 @@ while i < 4? {
       (return_stmt
         (lambda_expr
           (bind_list
-            (binding
-              (ident)))
+            (parameter
+              (binding
+                (ident))))
           (compound_stmt
             (expr_stmt
               (assignment_expr
@@ -3513,7 +3461,7 @@ let f = make();
 
 let mut i = 0;
 
-while i < 3? {
+while i < 3 {
     print(f());
     i = i + 1;
 }
@@ -3580,7 +3528,7 @@ e2e: recursion_with_locals
 fu sum(n) {
     let x = n;
 
-    if x <= 0 ? {
+    if x <= 0  {
         return 0;
     }
 
@@ -3595,8 +3543,9 @@ print(sum(5)); // expect: 15
   (fu_decl
     (ident)
     (bind_list
-      (binding
-        (ident)))
+      (parameter
+        (binding
+          (ident))))
     (compound_stmt
       (let_decl
         (binding
@@ -3981,7 +3930,7 @@ fu take(p_fu) {
 }
 
 fu close(p_delta) {
-  for let mut i = 0; i < 5; i = i + 1? {
+  for let mut i = 0 : 5 {
     take(fu() {
       print i;
     });
@@ -4001,8 +3950,9 @@ close(0);
   (fu_decl
     (ident)
     (bind_list
-      (binding
-        (ident)))
+      (parameter
+        (binding
+          (ident))))
     (compound_stmt
       (expr_stmt
         (call_expr
@@ -4010,23 +3960,15 @@ close(0);
   (fu_decl
     (ident)
     (bind_list
-      (binding
-        (ident)))
+      (parameter
+        (binding
+          (ident))))
     (compound_stmt
-      (for_stmt
-        (let_decl
-          (binding
-            (ident))
-          (number_expr))
-        (binary_expr
-          (ident)
-          (number_expr))
-        (assignment_expr
-          (lvalue_expr
-            (ident))
-          (binary_expr
-            (ident)
-            (number_expr)))
+      (numeric_for_stmt
+        (binding
+          (ident))
+        (number_expr)
+        (number_expr)
         (compound_stmt
           (expr_stmt
             (call_expr
@@ -4136,7 +4078,7 @@ e2e: local_slots_compiler_reuse
 fu test(s) {
   let side = s;
 
-  if side == 1? {
+  if side == 1 {
     let y = 10;
     let x = 20;
     print y;
@@ -4144,7 +4086,7 @@ fu test(s) {
     return;
   }
 
-  if side == 2? {
+  if side == 2 {
     let y = 30;
     let x = 40;
     print y;
@@ -4152,7 +4094,7 @@ fu test(s) {
     return;
   }
 
-  if side == 3? {
+  if side == 3 {
     let y = 50;
     let x = 60;
     print y;
@@ -4160,7 +4102,7 @@ fu test(s) {
     return;
   }
 
-  if side == 4? {
+  if side == 4 {
     let y = 70;
     let x = 80;
     print y;
@@ -4195,8 +4137,9 @@ test(0);
   (fu_decl
     (ident)
     (bind_list
-      (binding
-        (ident)))
+      (parameter
+        (binding
+          (ident))))
     (compound_stmt
       (let_decl
         (binding
@@ -7727,7 +7670,7 @@ e2e: constant_long
 
 // expect: 255
 // expect: 256
-if false? {
+if false {
 0;
 1;
 2;
@@ -8523,7 +8466,7 @@ e2e: jump_long
 ==================
 
 // expect: ok
-if false? {
+if false {
 0;
 0;
 0;
@@ -8824,7 +8767,7 @@ if false? {
 0;
 0;
 0;
-} else? print "ok";
+} else { print "ok"; }
 
 ---
 
@@ -9433,9 +9376,10 @@ if false? {
         (number_expr))
       (expr_stmt
         (number_expr)))
-    (print_stmt
-      (string_expr
-        (double_quoted_string)))))
+    (compound_stmt
+      (print_stmt
+        (string_expr
+          (double_quoted_string))))))
 
 ==================
 e2e: global_long
