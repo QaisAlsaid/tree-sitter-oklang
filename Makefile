@@ -1,6 +1,6 @@
 LANGUAGE_NAME := tree-sitter-oklang
 HOMEPAGE_URL := https://codeberg.org/qais/tree-sitter-oklang
-VERSION := 0.1.0
+VERSION := 0.2.0
 
 # repository
 SRC_DIR := src

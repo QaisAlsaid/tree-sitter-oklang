@@ -5,7 +5,7 @@
 
 ## Status
 
-**v0.1.1** supports: 
+**v0.2.0** supports: 
  - declarations
  - statements
  - expressions
