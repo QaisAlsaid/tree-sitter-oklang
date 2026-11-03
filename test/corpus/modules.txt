@@ -1,0 +1,112 @@
+================================================================================
+modules: from-import with symbol aliases
+================================================================================
+
+from "std/str" import upper, split;
+from "./lib.ok" import greet as hello, version as ver;
+
+---
+
+(source_file
+  (from_import_decl
+    (string_expr
+      (double_quoted_string))
+    (import_specifier
+      (ident))
+    (import_specifier
+      (ident)))
+  (from_import_decl
+    (string_expr
+      (double_quoted_string))
+    (import_specifier
+      (ident)
+      (ident))
+    (import_specifier
+      (ident)
+      (ident))))
+
+================================================================================
+modules: pub is the export rule
+================================================================================
+
+pub let version = 1;
+pub fu greet(name) { return "hi " + name; }
+pub class Counter { let mut count = 0; pub fu bump() { count += 1; return count; } }
+let secret = "private";
+
+---
+
+(source_file
+  (let_decl
+    (binding
+      (ident))
+    (number_expr))
+  (fu_decl
+    (ident)
+    (bind_list
+      (parameter
+        (binding
+          (ident))))
+    (compound_stmt
+      (return_stmt
+        (binary_expr
+          (string_expr
+            (double_quoted_string))
+          (ident)))))
+  (class_decl
+    (ident)
+    (class_let_decl
+      (binding
+        (ident))
+      (number_expr))
+    (class_fu_decl
+      (ident)
+      (compound_stmt
+        (expr_stmt
+          (compound_assignment_expr
+            (lvalue_expr
+              (ident))
+            (number_expr)))
+        (return_stmt
+          (ident)))))
+  (let_decl
+    (binding
+      (ident))
+    (string_expr
+      (double_quoted_string))))
+
+================================================================================
+modules: a module-shaped source
+================================================================================
+
+import "./mid.ok";
+from "./util.ok" import tick, tock as t;
+import "a/b" as ab;
+
+pub let answer = tick() + 1;
+
+---
+
+(source_file
+  (import_decl
+    (string_expr
+      (double_quoted_string)))
+  (from_import_decl
+    (string_expr
+      (double_quoted_string))
+    (import_specifier
+      (ident))
+    (import_specifier
+      (ident)
+      (ident)))
+  (import_decl
+    (string_expr
+      (double_quoted_string))
+    (ident))
+  (let_decl
+    (binding
+      (ident))
+    (binary_expr
+      (call_expr
+        (ident))
+      (number_expr))))

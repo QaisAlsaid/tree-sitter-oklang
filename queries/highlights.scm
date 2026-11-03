@@ -1,9 +1,9 @@
 ; control flow
 ["if" "else" "then" "otherwise"] @conditional
 ["while" "for"] @repeat
-["try" "catch" "finalize" "throw" "yield"] @exception
+["try" "catch" "throw" "yield" "defer" "deferr"] @exception
 "return" @keyword.return
-"import" @include
+["import" "from"] @include
 "as" @keyword
 
 ; declarations
@@ -43,6 +43,7 @@
 (class_decl superclass: (ident) @type)
 (class_conversion_operator type: (ident) @type)
 (import_decl alias: (ident) @type)
+(import_specifier alias: (ident) @type)
 
 (class_fu_decl name: (ident) @constructor
   (#any-of? @constructor "init" "deinit"))

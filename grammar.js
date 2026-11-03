@@ -36,11 +36,10 @@ export default grammar({
     $.multiline_comment,
   ],
   conflicts: $ => [
-    [$.let_decl, $.fu_decl, $.class_decl, $.import_decl], // top level decl
+    [$.let_decl, $.fu_decl, $.class_decl], // top level decl
     [$.let_decl, $.fu_decl, $.class_decl], // c-style for init
     [$.class_let_decl, $.class_fu_decl, $.class_operator_decl], // in class (decl mods)
     [$.class_fu_decl, $.class_operator_decl], // in class (declmods for functions except the ones that they share with let)
-    [$.try_stmt],
   ],
 
   word: $ => $.ident,
@@ -55,6 +54,7 @@ export default grammar({
       $.fu_decl,
       $.class_decl,
       $.import_decl,
+      $.from_import_decl,
     ),
 
     // let 
@@ -62,14 +62,34 @@ export default grammar({
       repeat(choice(
         'glob',
         'export',
+        'pub',
       )),
       'let',
-      $.binding,
-      optional(seq(
-        '=',
-        $._expr,
-      )),
+      choice(
+        seq(
+          $.binding,
+          optional(seq(
+            '=',
+            $._expr,
+          )),
+        ),
+        // the destructuring let (spans): the value must be a call.
+        seq(
+          $.span_bindings,
+          '=',
+          $._expr,
+        ),
+      ),
       ';',
+    ),
+
+    // let (a, mut b, c) = call(); - one binding per returned value.
+    span_bindings: $ => seq(
+      '(',
+      $.binding,
+      repeat(seq(',', $.binding)),
+      optional(','),
+      ')',
     ),
 
     // fu 
@@ -77,6 +97,7 @@ export default grammar({
       field('declmods', repeat(choice(
         'glob',
         'export',
+        'pub',
         'async',
       ))),
       'fu',
@@ -113,6 +134,7 @@ export default grammar({
       field('declmods', repeat(choice(
         'glob',
         'export',
+        'pub',
       ))),
       'class',
       field('name', $.ident),
@@ -189,12 +211,9 @@ export default grammar({
       '()', '[]',
     ),
 
-    // import (also not supported currently).
+    // import (OR-1): the quoted path is the whole surface - no modifiers,
+    // top level only, single or double quoted.
     import_decl: $ => seq(
-      field('declmods', repeat(choice(
-        'export', // weird but semantically correct
-        'glob',
-      ))),
       'import',
       field('module', $.string_expr),
       optional(seq(
@@ -202,6 +221,24 @@ export default grammar({
         field('alias', $.ident),
       )),
       ';',
+    ),
+
+    // from "a/b" import x, y as z; - bind exported symbols directly.
+    from_import_decl: $ => seq(
+      'from',
+      field('module', $.string_expr),
+      'import',
+      $.import_specifier,
+      repeat(seq(',', $.import_specifier)),
+      ';',
+    ),
+
+    import_specifier: $ => seq(
+      field('name', $.ident),
+      optional(seq(
+        'as',
+        field('alias', $.ident),
+      )),
     ),
 
     // statements
@@ -216,6 +253,8 @@ export default grammar({
       $.break_stmt,
       $.continue_stmt,
       $.try_stmt,
+      $.defer_stmt,
+      $.deferr_stmt,
       $.throw_stmt,
       $.yield_stmt,
       $.print_stmt,
@@ -293,7 +332,11 @@ export default grammar({
     // return 
     return_stmt: $ => seq(
       'return',
-      optional($._expr),
+      optional(seq(
+        $._expr,
+        // the multi-value return (spans): one expression per returned value.
+        repeat(seq(',', $._expr)),
+      )),
       ';',
     ),
 
@@ -317,15 +360,24 @@ export default grammar({
       'catch',
       optional(field('exception', $.catch_binding)),
       $._stmt,
-      optional(seq(
-        'finalize',
-        $._stmt,
-      )),
     ),
     // throw
     throw_stmt: $ => seq(
       'throw',
       optional($._expr),
+      ';',
+    ),
+
+    // defer: call at scope exit. deferr: only when an error unwinds out.
+    defer_stmt: $ => seq(
+      'defer',
+      $._expr,
+      ';',
+    ),
+
+    deferr_stmt: $ => seq(
+      'deferr',
+      $._expr,
       ';',
     ),
 

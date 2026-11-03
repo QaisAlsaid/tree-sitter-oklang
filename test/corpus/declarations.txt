@@ -130,7 +130,7 @@ export class Point inherits Base {
 import
 ==================
 
-glob import "std.str" as str;
+import "std.str" as str;
 import 'util';
 
 ---

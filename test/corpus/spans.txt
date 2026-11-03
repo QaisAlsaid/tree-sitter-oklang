@@ -1,0 +1,104 @@
+================================================================================
+spans: destructuring let
+================================================================================
+
+let (x, y) = pair(3, 4);
+let (mut a, b, c) = triple();
+let (p, q,) = pair(1, 2);
+
+---
+
+(source_file
+  (let_decl
+    (span_bindings
+      (binding
+        (ident))
+      (binding
+        (ident)))
+    (call_expr
+      (ident)
+      (expr_list
+        (number_expr)
+        (number_expr))))
+  (let_decl
+    (span_bindings
+      (binding
+        (ident))
+      (binding
+        (ident))
+      (binding
+        (ident)))
+    (call_expr
+      (ident)))
+  (let_decl
+    (span_bindings
+      (binding
+        (ident))
+      (binding
+        (ident)))
+    (call_expr
+      (ident)
+      (expr_list
+        (number_expr)
+        (number_expr)))))
+
+================================================================================
+spans: multi-value return
+================================================================================
+
+fu pair(a, b) {
+  return a, b;
+}
+
+fu nothing() {
+  return;
+}
+
+---
+
+(source_file
+  (fu_decl
+    (ident)
+    (bind_list
+      (parameter
+        (binding
+          (ident)))
+      (parameter
+        (binding
+          (ident))))
+    (compound_stmt
+      (return_stmt
+        (ident)
+        (ident))))
+  (fu_decl
+    (ident)
+    (compound_stmt
+      (return_stmt))))
+
+================================================================================
+spans: pub span let is the module export form
+================================================================================
+
+pub fu pair() {
+  return 3, 4;
+}
+
+pub let (a, b) = pair();
+
+---
+
+(source_file
+  (fu_decl
+    (ident)
+    (compound_stmt
+      (return_stmt
+        (number_expr)
+        (number_expr))))
+  (let_decl
+    (span_bindings
+      (binding
+        (ident))
+      (binding
+        (ident)))
+    (call_expr
+      (ident))))

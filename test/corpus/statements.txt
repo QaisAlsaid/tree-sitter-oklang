@@ -159,22 +159,38 @@ for let mut i = 0 : 5 { i = 10; }
           (number_expr))))))
 
 ==================
-try: binding + finalize
+defer: schedules a call for scope exit
 ==================
 
-try {} catch e { print e; } finalize {}
+{ defer close(file); print 1; }
 
 ---
 
 (source_file
-  (try_stmt
-    (compound_stmt)
-    (catch_binding
-      (ident))
+  (compound_stmt
+    (defer_stmt
+      (call_expr
+        (ident)
+        (expr_list
+          (ident))))
+    (print_stmt
+      (number_expr))))
+
+==================
+deferr: error-path-only cleanup
+==================
+
+fu f() { deferr cleanup(); }
+
+---
+
+(source_file
+  (fu_decl
+    (ident)
     (compound_stmt
-      (print_stmt
-        (ident)))
-    (compound_stmt)))
+      (deferr_stmt
+        (call_expr
+          (ident))))))
 
 ==================
 try: no binding
